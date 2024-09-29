@@ -1,7 +1,14 @@
 (defpackage :lowf
   (:use :cl)
   (:export :run-server)
-  (:local-nicknames (:ht :hunchentoot)))
+  (:local-nicknames (:ht :hunchentoot))
+  (:import-from :lowf.config
+		:config
+		:config-int)
+  (:import-from :lowf.logger
+		:log-info)
+  (:import-from :lowf.router
+		:route-request))
 
 (in-package :lowf)
 
@@ -14,30 +21,52 @@
 (defclass app-acceptor (ht:acceptor)
   ())
 
+;;(defmethod ht:acceptor-log-message ((acceptor app-acceptor) log-level format &rest args)
+;;  TODO: logging
+;;  )
+
 (defmethod ht:acceptor-dispatch-request ((acceptor app-acceptor) request)
-  (format t "acceptor-dispatch-request: uri=~s~%" (ht:request-uri request))
-  (setf (ht:header-out "Content-Type") "application/json")
-  "{ \"count\": 123 }")
+  (let ((method (ht:request-method request))
+	(path (ht:request-uri request)))
+    
+    (log-info "[~s] ~s~%" method path)
+
+    (multiple-value-bind (callback captures) (route-request method path)
+      
+      (if callback
+	  (progn
+	    (setf (hunchentoot:aux-request-value :path-captures) captures
+		  (hunchentoot:aux-request-value :query-args) query-args)
+	    (funcall callback request))
+
+	  
+	  (call-next-method)))))
+    
+;;    (route-request method path)
+	      
+;;  (setf (ht:header-out "Content-Type") "application/json")
+;;  "{ \"count\": 123 }")
 
 ;;
 ;; server functions
 ;;
 
-(defun make-acceptor (port address)
-  (format t "make-acceptor: address=~s  port=~s~%" address port)
-  
-  (make-instance 'app-acceptor
-		 :port port
-		 :address address))
+(defun make-acceptor ()
+  (setf *app-acceptor*
+	(or *app-acceptor*
+	    (let ((address (config :server_address "0.0.0.0"))
+		  (port (config-int :server_port 8002)))
+	      
+	      (log-info "make-acceptor: address=~s  port=~s" address port)
+	      
+	      (make-instance 'app-acceptor
+			     :port port
+			     :address address)))))
 
-(defun run-server ()
-  (setf *app-acceptor* (make-acceptor 3002 "localhost"))
-  
-  (unwind-protect
-       (progn
-	 (ht:start *app-acceptor*)
-	 (loop do (sleep 60))) ;; idle
-    
-    (progn
-      (format t "run-server: cleanup ~%")
-      (ht:stop *app-acceptor*))))
+(export 'start-server)
+(defun start-server ()
+  (ht:start (make-acceptor)))
+
+(export 'stop-server)
+(defun stop-server ()
+  (ht:stop (make-acceptor)))

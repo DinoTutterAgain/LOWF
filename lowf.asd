@@ -19,6 +19,11 @@
 	       )
   
   :components ((:module "src"
-			:components ((:file "main")))))
+			:components ((:file "utils")
+				     (:file "config")
+				     (:file "logger")
+				     (:file "router")
+				     (:file "server")
+				     (:file "main")))))
 
 			
