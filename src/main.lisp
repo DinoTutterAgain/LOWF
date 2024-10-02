@@ -1,18 +1,59 @@
 (defpackage :lowf
   (:use :cl)
   (:export :run-server)
-  (:local-nicknames (:ht :hunchentoot))
+  (:local-nicknames (:ht :hunchentoot)
+		    (:html :lowf.html-view.tags))
   (:import-from :lowf.config
 		:config
 		:config-int)
   (:import-from :lowf.logger
 		:log-info)
   (:import-from :lowf.router
-		:route-request))
+		:route-request
+		:define-route-table
+		:route))
 
 (in-package :lowf)
 
 (defparameter *app-acceptor* nil)
+
+;;
+;; app demo stuff (to be moved)
+;;
+
+(defmacro with-layout ((title) &body content)
+  `(list
+    (html:doctype "html")
+    (html:html ()
+      (html:head ()
+	(html:title () ,title)
+	(html:meta :property "og:site_name" :content "LOWF demo site")
+	(html:meta :property "og:type" :content "website")
+	(html:meta :property "og:description" :content "A sample website from build-site")
+	(html:meta :charset "UTF-8"))
+      (html:main ()
+	,@content)
+      (html:footer ()
+	(html:p () "Copyright &copy; 2024, Me Corp")))))
+
+(defun render-root ()
+  (with-layout ("demo page")
+    (html:h1 () "Hello!")))
+
+(defun render-show ()
+  (with-layout ("Show thing page")
+    (html:h1 () "Showing a thing here")))
+
+(defun act-on-index (request)
+  (lowf.html-views:respond-html-view request (render-root)))
+
+(defun act-on-show (request)
+  (lowf.html-views:respond-html-view request (render-show)))
+
+(define-route-table
+  (route :get :root "/" #'act-on-index)
+  (route :get :show "/image/:id" #'act-on-show))
+
 
 ;;
 ;; hunchentoot acceptor stuff
@@ -35,8 +76,8 @@
       
       (if callback
 	  (progn
-	    (setf (hunchentoot:aux-request-value :path-captures) captures
-		  (hunchentoot:aux-request-value :query-args) query-args)
+	    (setf (hunchentoot:aux-request-value :path-captures) captures)
+		  ;;(hunchentoot:aux-request-value :query-args) query-args) -- use (ht:get-parameters*) instead!!
 	    (funcall callback request))
 
 	  

@@ -24,6 +24,8 @@
 				     (:file "logger")
 				     (:file "router")
 				     (:file "server")
+				     (:file "html-views")
+				     (:file "html-view-tags")
 				     (:file "main")))))
 
 			
