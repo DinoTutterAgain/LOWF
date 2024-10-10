@@ -25,3 +25,8 @@
   (loop for (name . value) in list
      collect (cons (make-keyword (string-upcase name))
 		   value)))
+
+(export 'present?)
+(defun present? (thing)
+  "returns T if THING is not NIL"
+  (not (null thing)))

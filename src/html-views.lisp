@@ -167,26 +167,27 @@
 (defparameter *layout-function* nil
   "the layout callback")
 
-(defun default-layout (content-function)
+(export 'define-layout)
+(defmacro define-layout ((request-var content-var) &body body)
+  `(setf *layout-function*
+	 #'(lambda (,request-var ,content-var)
+	     ,@body)))
+
+;; default layout
+(define-layout (request content)
+  (declare (ignore request))
   (html:html ()
-    (funcall content-function)))
+    (html:head ()
+      (html:title () "Default LOWF layout"))
+    (html:body ()
+      content)))
 
-(setf *layout-function* #'default-layout)
-
-;;(defparameter *views* (make-hash-table)
-;;  "the page database")
-
-;; (defmacro with-html-view (template)
-;;   (lambda () ;; does the rendering
-;;     ))
 
 
 
 (export 'respond-html-view)
-(defun respond-html-view (request doc-tree)
-  ;; (maybe set the request/response mime type here?
-  
-  (render-html doc-tree))
+(defun respond-html-view (request view-contents)
+  ;; (maybe set the request/response mime type here?)
 
-;; (respond-html-fragment)
+  (render-html (funcall *layout-function* request view-contents)))
 

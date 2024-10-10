@@ -6,47 +6,59 @@
 		:route)
   (:import-from :lowf.server
 		:define-server-pre-start
-		:set-public-directory))
+		:set-public-directory
+		:define-not-found)
+  (:import-from :lowf.html-views
+		:define-layout
+		:respond-html-view))
 
 (in-package :lowf.demo)
 
 ;;
 ;; app demo stuff (to be moved)
 ;;
-
-(defmacro with-layout ((title) &body content)
-  `(list
-    (html:doctype "html")
-    (html:html ()
-      (html:head ()
-	(html:title () ,title)
-	(html:meta :property "og:site_name" :content "LOWF demo site")
-	(html:meta :property "og:type" :content "website")
-	(html:meta :property "og:description" :content "A sample website from build-site")
-	(html:meta :charset "UTF-8"))
+(define-layout (request contents)
+  (declare (ignore request))
+  (list
+   (html:doctype "html")
+   (html:html ()
+     (html:head ()
+       (html:title () "LOWF demo 2")
+       (html:meta :property "og:site_name" :content "LOWF demo site")
+       (html:meta :property "og:type" :content "website")
+       (html:meta :property "og:description" :content "Demonstration of LOWF whilst I write LOWF")
+       (html:meta :charset "UTF-8")
+       (html:link :rel "stylesheet" :type "text/css" :href "styles.css"))
       (html:main ()
-	,@content)
+	contents)
       (html:footer ()
 	(html:p () "Copyright &copy; 2024, Me Corp")))))
 
 (defun render-root ()
-  (with-layout ("demo page")
-    (html:h1 () "Hello!")))
+  (html:h1 () "Hello!"))
 
 (defun render-show ()
-  (with-layout ("Show thing page")
-    (html:h1 () "Showing a thing here")))
+  (html:h1 () "Showing a thing here"))
 
 (defun act-on-index (request)
-  (lowf.html-views:respond-html-view request (render-root)))
+  (respond-html-view request (render-root)))
 
 (defun act-on-show (request)
-  (lowf.html-views:respond-html-view request (render-show)))
+  (respond-html-view request (render-show)))
 
 (define-route-table
   (route :get :root "/" #'act-on-index)
   (route :get :show "/image/:id" #'act-on-show))
 
+(define-not-found
+  ;; (log-info "request=~s" hunchentoot:*request*)
+  (lowf.html-views:respond-html-view
+   nil 
+   (with-layout ("Not found")
+     (list 
+      (html:h1 () "404: Not found")
+      (html:h2 () "The page you were looking for does not exist")
+      (html:p () "Please check the URL and try again")))))
 
 (define-server-pre-start
   ;; called before the server is about to run

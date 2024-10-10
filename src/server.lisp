@@ -5,6 +5,8 @@
   (:import-from :lowf.config
 		:config
 		:config-int)
+  (:import-from :lowf.utils
+		:present?)
   (:import-from :lowf.logger
 		:log-info)
   (:import-from :lowf.router
@@ -16,7 +18,7 @@
 (defparameter *app-setup-hook* nil)
 
 (defclass app-acceptor (ht:acceptor)
-  ())
+  ((not-found-handler :initform nil)))
 
 ;;(defmethod ht:acceptor-log-message ((acceptor app-acceptor) log-level format &rest args)
 ;;  TODO: logging
@@ -39,6 +41,17 @@
 	  
 	  (call-next-method)))))
 
+(defmethod ht:acceptor-status-message ((acceptor app-acceptor) http-status-code &key)
+  ;; (format nil "acceptor-status-message http-status-code=~s~%~%" http-status-code)
+  (with-slots (not-found-handler) acceptor
+    (log-info "acceptor-status-message http-status-code=~s" http-status-code)
+    (cond
+      ((and (eq http-status-code 404)
+	    (present? not-found-handler))
+       (funcall not-found-handler))
+      
+      (t (call-next-method)))))
+
 ;;
 ;; server functions
 ;;
@@ -60,6 +73,15 @@
   `(setf *app-setup-hook*
 	 #'(lambda ()
 	     ,@body)))
+
+(export 'set-not-found-handler)
+(defun set-not-found-handler (callback)
+  (setf (slot-value (make-acceptor) 'not-found-handler) callback))
+
+(export 'define-not-found)
+(defmacro define-not-found (&body body)
+  `(set-not-found-handler #'(lambda ()
+			      ,@body)))
 
 (export 'set-public-directory)
 (defun set-public-directory (public-path)
