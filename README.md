@@ -15,3 +15,9 @@ An attempt at building a web application in common lisp.
 - SBCL 2.4.3
 - emacs / slime / quicklisp
 - sqlite or postgres
+
+
+So the thing I am doing here is developing a full-fledged application
+and building LOWF as part of that, then when the time is ready i'll pull
+LOWF out as its own thing and publish it, which is to say that the
+application may not be "open" but LOWF will (hopefully) be.

@@ -27,18 +27,18 @@
 (defmethod ht:acceptor-dispatch-request ((acceptor app-acceptor) request)
   (let ((method (ht:request-method request))
 	(path (ht:request-uri request)))
-    
+
     (log-info "[~s] ~s~%" method path)
 
     (multiple-value-bind (callback captures) (route-request method path)
-      
+
       (if callback
 	  (progn
 	    (setf (hunchentoot:aux-request-value :path-captures) captures)
 		  ;;(hunchentoot:aux-request-value :query-args) query-args) -- use (ht:get-parameters*) instead!!
 	    (funcall callback request))
 
-	  
+
 	  (call-next-method)))))
 
 (defmethod ht:acceptor-status-message ((acceptor app-acceptor) http-status-code &key)
@@ -49,7 +49,7 @@
       ((and (eq http-status-code 404)
 	    (present? not-found-handler))
        (funcall not-found-handler))
-      
+
       (t (call-next-method)))))
 
 ;;
@@ -61,9 +61,9 @@
 	(or *app-acceptor*
 	    (let ((address (config :server_address "0.0.0.0"))
 		  (port (config-int :server_port 8002)))
-	      
+
 	      (log-info "make-acceptor: address=~s  port=~s" address port)
-	      
+
 	      (make-instance 'app-acceptor
 			     :port port
 			     :address address)))))
@@ -74,7 +74,6 @@
 	 #'(lambda ()
 	     ,@body)))
 
-(export 'set-not-found-handler)
 (defun set-not-found-handler (callback)
   (setf (slot-value (make-acceptor) 'not-found-handler) callback))
 
