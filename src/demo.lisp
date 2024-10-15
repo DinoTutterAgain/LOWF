@@ -47,12 +47,12 @@
        (html:footer ()
 	 (html:p () "Copyright &copy; 2024, Me Corp"))))))
 
-  (defun render-root ()
+(defun render-root ()
   (html:h1 () "Hello!"))
 
 (defun render-show ()
   (list
-   (html:h1 () "Showing a thing here")
+   (html:h1 () "Showing a thing here. toot")
    (html:p () (format nil "Captures: ~s" (hunchentoot:aux-request-value :path-captures)))))
 
 (defun act-on-index (request)

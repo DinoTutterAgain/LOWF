@@ -27,6 +27,11 @@
 				     (:file "html-view-tags")
 				     (:file "html-views")
 				     
-				     (:file "demo")))))
+				     (:file "demo")))
+	       
+	       (:module "app"
+			:components ((:file "model")
+				     (:file "main")))))
+	
 
 			

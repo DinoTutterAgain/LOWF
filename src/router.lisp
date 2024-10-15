@@ -129,21 +129,21 @@
   (setf *route-table* nil))
 
 ;; helper
-(defun build-route-entry (name method path-segments callback)
+(defun build-route-entry (name method path path-segments callback)
   (multiple-value-bind (path-pattern pattern-names) (regexify-path path-segments)
       
     (make-route-entry :name name
 		      :method method
-		      ;;:path-string path
+		      :path-string path
 		      :pattern path-pattern
 		      :match-names pattern-names
 		      :callback callback)))
 
 ;;(export 'add-route-point)
-(defun add-routing-point (name method path-segments callback)
+(defun add-routing-point (name method path path-segments callback)
   (setf *route-table*
 	(append *route-table*
-		(list (build-route-entry name method path-segments callback)))))
+		(list (build-route-entry name method path path-segments callback)))))
 
 ;; internal
 (defun match-for-path (entry method path)
@@ -171,7 +171,7 @@
 ;;(export 'define-route-point)
 (defun define-route-point (name method path-string callback)
   (let ((path-segments (cl-ppcre:split "\/" path-string)))
-    (add-routing-point name method path-segments callback)
+    (add-routing-point name method path-string path-segments callback)
     (add-de-routing-point name path-string path-segments)
     t))
 
@@ -186,3 +186,9 @@
        (reset-route-table)
        (reset-de-routing-table)
        ,@body)))
+
+(export 'print-route-table)
+(defun print-route-table (&optional (stream t))
+  (loop for route in *route-table*
+	do (with-slots (name method path-string) route
+	     (format stream "~a -> [~a] ~a~%" name method path-string))))
