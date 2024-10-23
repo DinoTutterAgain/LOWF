@@ -4,7 +4,7 @@
 	   :pending-item-count
 	   :all-items
 	   :all-item-count
-	   :add-tem
+	   :add-item
 	   :mark-item-done
 	   :delete-item
 	   :todo-item-id

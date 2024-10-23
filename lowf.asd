@@ -23,11 +23,12 @@
 				     (:file "config")
 				     (:file "logger")
 				     (:file "router")
-				     (:file "server")
 				     (:file "html-view-tags")
 				     (:file "html-views")
-				     
-				     (:file "demo")))
+				     (:file "request")
+				     (:file "response")
+				     (:file "server"))
+				     ;;(:file "demo")))
 	       
 	       (:module "app"
 			:components ((:file "model")
