@@ -9,6 +9,8 @@
 		:present?)
   (:import-from :lowf.logger
 		:log-info)
+  (:import-from :lowf.response
+		:respond-not-found-html)
   (:import-from :lowf.router
 		:route-request))
 
@@ -18,7 +20,7 @@
 (defparameter *app-setup-hook* nil)
 
 (defclass app-acceptor (ht:acceptor)
-  ((not-found-handler :initform nil)))
+  ()) ;;((not-found-handler :initform nil)))
 
 ;;(defmethod ht:acceptor-log-message ((acceptor app-acceptor) log-level format &rest args)
 ;;  TODO: logging
@@ -43,14 +45,12 @@
 
 (defmethod ht:acceptor-status-message ((acceptor app-acceptor) http-status-code &key)
   ;; (format nil "acceptor-status-message http-status-code=~s~%~%" http-status-code)
-  (with-slots (not-found-handler) acceptor
-    (log-info "acceptor-status-message http-status-code=~s" http-status-code)
-    (cond
-      ((and (eq http-status-code 404)
-	    (present? not-found-handler))
-       (funcall not-found-handler))
+  (log-info "acceptor-status-message http-status-code=~s" http-status-code)
+  (cond
+    ((eq http-status-code 404)
+     (respond-not-found-html "The page you were looking for does not exist"))
 
-      (t (call-next-method)))))
+    (t (call-next-method))))
 
 ;;
 ;; server functions
@@ -90,3 +90,9 @@
 (export 'stop-server)
 (defun stop-server ()
   (ht:stop (make-acceptor)))
+
+(export 'try-request)
+(defun try-request (method path)
+  (let ((fake-request (make-instance 'ht:request)))
+    ;; TODO
+    ))

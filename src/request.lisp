@@ -1,12 +1,17 @@
 (defpackage :lowf.request
   (:use :cl)
-  (:export :with-post-parameters))
+  (:export :with-post-parameters
+	   :path-captures
+	   :path-capture-value
+	   :path-capture-integer
+	   :current-request))
 
 (in-package :lowf.request)
 
 ;; (defun key-lookup (key-string dict-list)
 ;;  (cdr (find key-string dict-list :key #'second :test 'string=)))
 
+;; exported
 (defmacro with-post-parameters ((&rest parameters-spec) request-arg &body body)
   "Pulls POST arguments out of REQUEST-ARG and assigns them to arguments like WITH-SLOTS"
   #|
@@ -29,3 +34,21 @@
 	 (symbol-macrolet ,(mapcar #'labelify parameters-spec)
 
 	   ,@body)))))
+
+;; exported
+(defun path-captures ()
+  (hunchentoot:aux-request-value :path-captures))
+
+;; exported
+(defun path-capture-value (key)
+  (cdr (find key (path-captures) :key #'car)))
+
+;; exported
+(defun path-capture-integer (key)
+  (parse-integer (path-capture-value key) :junk-allowed t))
+
+;; exported
+(defun current-request ()
+  ;; this is a fudge whilst i figure out the API 
+  (when (boundp 'hunchentoot:*request*)
+    hunchentoot:*request*))

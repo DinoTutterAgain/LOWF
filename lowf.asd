@@ -27,8 +27,8 @@
 				     (:file "html-views")
 				     (:file "request")
 				     (:file "response")
-				     (:file "server"))
-				     ;;(:file "demo")))
+				     (:file "server")))
+				     ;;(:file "demo"))
 	       
 	       (:module "app"
 			:components ((:file "model")

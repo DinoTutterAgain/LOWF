@@ -8,15 +8,18 @@
 		:route-path-to)
   (:import-from :lowf.server
 		:define-server-pre-start
-		:set-public-directory
-		:define-not-found)
+		:set-public-directory)
   (:import-from :lowf.logger
 		:log-info)
   (:import-from :lowf.html-views
-		:define-layout
-		:respond-html-view)
+		:define-layout)
   (:import-from :lowf.request
-		:with-post-parameters))
+		:with-post-parameters
+		:path-capture-integer)
+  (:import-from :lowf.response
+		:define-not-found
+		:respond-html-view
+		:respond-not-found-html))
 
 (in-package :app.main)
 
@@ -95,8 +98,10 @@
      (html:li () "four")
      (html:li () "five"))))
 
-(defun render-show-item ()
-  (html:h1 () "Show item"))
+(defun render-show-item (item)
+  (list
+   (html:h1 () "Show item")
+   (html:p () (format nil "item=~s" item))))
 
 (defun render-new-item ()
   (list
@@ -125,7 +130,14 @@
   (respond-html-view request (render-about)))
 
 (defun act-on-show-item (request)
-  (respond-html-view request (render-show-item)))
+  (let ((id (path-capture-integer :id)))
+    (if (numberp id)
+	(let ((item (app.model:find-item id)))
+	  (if item
+	      (respond-html-view request (render-show-item item))
+	      (respond-not-found-html "Could not find todo item with that ID")))
+	(respond-not-found-html "Not a valid ID (must be an integer)"))))
+	
 
 (defun act-on-new-item (request)
   (respond-html-view request (render-new-item)))

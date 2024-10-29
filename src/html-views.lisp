@@ -183,11 +183,7 @@
       content)))
 
 
-
-
 (export 'respond-html-view)
-(defun respond-html-view (request view-contents)
-  ;; (maybe set the request/response mime type here?)
-
-  (render-html (funcall *layout-function* request view-contents)))
+(defun wrap-view-in-layout (view-contents)
+  (render-html (funcall *layout-function* view-contents)))
 
