@@ -28,7 +28,7 @@
 				     (:file "request")
 				     (:file "response")
 				     (:file "server")))
-				     ;;(:file "demo"))
+				     ;;(:file "demo")))
 	       
 	       (:module "app"
 			:components ((:file "model")

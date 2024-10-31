@@ -6,20 +6,26 @@
 		:define-route-table
 		:route
 		:route-path-to)
+
   (:import-from :lowf.server
 		:define-server-pre-start
 		:set-public-directory)
+  
   (:import-from :lowf.logger
 		:log-info)
+  
   (:import-from :lowf.html-views
-		:define-layout)
+		:define-layout
+		:respond-html-view)
+  
   (:import-from :lowf.request
 		:with-post-parameters
-		:path-capture-integer)
+		:path-capture-value-integer)
+
   (:import-from :lowf.response
-		:define-not-found
-		:respond-html-view
-		:respond-not-found-html))
+		:set-not-found-handler
+		:invoke-not-found-handler
+		:set-response-code))
 
 (in-package :app.main)
 
@@ -48,7 +54,7 @@
        (html:meta :property "og:type" :content "Demo application")
        (html:meta :property "og:description" :content "Demonstration of LOWF whilst I write LOWF")
        (html:meta :charset "UTF-8")
-       (html:link :rel "stylesheet" :type "text/css" :href "todo.css"))
+       (html:link :rel "stylesheet" :type "text/css" :href "/styles.css"))
 
      (html:body ()
        (html:header ()
@@ -100,8 +106,8 @@
 
 (defun render-show-item (item)
   (list
-   (html:h1 () "Show item")
-   (html:p () (format nil "item=~s" item))))
+   (html:h1 () (model:todo-item-name item))
+   (html:p () (format nil "(~d) Created ~s" (model:todo-item-id item) (model:todo-item-created-at item)))))
 
 (defun render-new-item ()
   (list
@@ -113,7 +119,7 @@
      (html:fieldset ()
        (html:button (:type "submit") "Create")))))
 
-(defun respond-not-found-html (message)
+(defun render-route-not-found (message)
   (list
    (html:h1 () "404 Not Found")
    (html:p () (or message
@@ -123,6 +129,10 @@
 ;; controllers
 ;;
 
+(defun respond-not-found (request message)
+  (set-response-code 404)
+  (respond-html-view request (render-route-not-found message)))
+
 (defun act-on-root (request)
   (respond-html-view request (render-root)))
 
@@ -130,14 +140,22 @@
   (respond-html-view request (render-about)))
 
 (defun act-on-show-item (request)
-  (let ((id (path-capture-integer :id)))
-    (if (numberp id)
-	(let ((item (app.model:find-item id)))
-	  (if item
-	      (respond-html-view request (render-show-item item))
-	      (respond-not-found-html "Could not find todo item with that ID")))
-	(respond-not-found-html "Not a valid ID (must be an integer)"))))
-	
+  (let ((item-id (path-capture-value-integer :id request)))
+    (if item-id
+	(let ((found-item (model:find-item item-id)))
+	  (if found-item
+	      (respond-html-view request (render-show-item found-item))
+	      
+	      (respond-not-found request "Couldn't find that item")))
+
+	(respond-not-found request "Bad or missing item ID"))))
+
+	      
+;;    (log-info "HOWDEE: item-id=~s" item-id))
+  
+;;  (set-response-code 404)
+;;  (respond-html-view request (render-route-not-found "Couldn't find that item")))
+  ;; (respond-html-view request (render-show-item)))
 
 (defun act-on-new-item (request)
   (respond-html-view request (render-new-item)))
@@ -153,9 +171,14 @@
       (log-info "new-item=~s" new-item)))
   (hunchentoot:redirect "/"))
 
+(defun act-do-not-found (request)
+  (respond-not-found request "Couldn't find that page you were looking for"))
+
 ;;
 ;; server stuff
 ;;
+
+(set-not-found-handler 'act-do-not-found)
 
 (define-route-table
   (route :get :root "/" 'act-on-root)

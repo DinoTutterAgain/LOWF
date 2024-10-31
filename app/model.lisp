@@ -7,15 +7,13 @@
 	   :add-item
 	   :mark-item-done
 	   :delete-item
+	   :find-item
+	   
 	   :todo-item-id
 	   :todo-item-name
 	   :todo-item-created-at
 	   :todo-item-completed-on
-	   :todo-item-is-complete?
-	   :todo-item-name
-	   :todo-item-id
-	   :todo-item-created-at
-	   :todo-item-completed-on))
+	   :todo-item-is-complete?))
 
 (in-package :app.model)
 
@@ -68,5 +66,9 @@
 	(remove-if #'(lambda (item) (eq (todo-item-id item)
 					id))
 		   *todo-items*)))
+
+;; exported
+(defun find-item (id)
+  (find id *todo-items* :key #'todo-item-id :test #'=))
 
 ;; TODO: make items orderable
