@@ -16,8 +16,7 @@
 		:route-request)
   
   (:import-from :lowf.response
-		:invoke-not-found-handler
-		:has-not-found-handler?))
+		:invoke-not-found-handler))
 
 (in-package :lowf.server)
 
@@ -25,7 +24,7 @@
 (defparameter *app-setup-hook* nil)
 
 (defclass app-acceptor (ht:acceptor)
-  ((not-found-handler :initform nil)))
+  ())
 
 ;;(defmethod ht:acceptor-log-message ((acceptor app-acceptor) log-level format &rest args)
 ;;  TODO: logging
@@ -49,7 +48,6 @@
 	  (call-next-method)))))
 
 (defmethod ht:acceptor-status-message ((acceptor app-acceptor) http-status-code &key)
-  ;; (format nil "acceptor-status-message http-status-code=~s~%~%" http-status-code)
   (log-info "acceptor-status-message http-status-code=~s" http-status-code)
 
   (or (and (= http-status-code 404)

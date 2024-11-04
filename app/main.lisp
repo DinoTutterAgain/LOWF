@@ -1,7 +1,9 @@
 (defpackage :app.main
   (:use :cl)
   (:local-nicknames (:html :lowf.html-view.tags)
-		    (:model :app.model))
+		    (:model :app.model)
+		    (:x :alexandria))
+  
   (:import-from :lowf.router
 		:define-route-table
 		:route
@@ -16,7 +18,7 @@
   
   (:import-from :lowf.html-views
 		:define-layout
-		:respond-html-view)
+		)
   
   (:import-from :lowf.request
 		:with-post-parameters
@@ -25,7 +27,8 @@
   (:import-from :lowf.response
 		:set-not-found-handler
 		:invoke-not-found-handler
-		:set-response-code))
+		:set-response-code
+		:respond-html-view))
 
 (in-package :app.main)
 
@@ -140,28 +143,16 @@
   (respond-html-view request (render-about)))
 
 (defun act-on-show-item (request)
-  (let ((item-id (path-capture-value-integer :id request)))
-    (if item-id
-	(let ((found-item (model:find-item item-id)))
-	  (if found-item
-	      (respond-html-view request (render-show-item found-item))
-	      
-	      (respond-not-found request "Couldn't find that item")))
+  (x:if-let (item-id (path-capture-value-integer :id request))
+    (x:if-let (found-item (model:find-item item-id))
+      (respond-html-view request (render-show-item found-item))
+	  
+      (respond-not-found request "Couldn't find that item"))
 
-	(respond-not-found request "Bad or missing item ID"))))
-
-	      
-;;    (log-info "HOWDEE: item-id=~s" item-id))
-  
-;;  (set-response-code 404)
-;;  (respond-html-view request (render-route-not-found "Couldn't find that item")))
-  ;; (respond-html-view request (render-show-item)))
+    (respond-not-found request "Bad or missing item ID")))
 
 (defun act-on-new-item (request)
   (respond-html-view request (render-new-item)))
-
-
-
   
 (defun act-do-create-item (request)
   (format t "Howdee~%")
@@ -171,14 +162,14 @@
       (log-info "new-item=~s" new-item)))
   (hunchentoot:redirect "/"))
 
-(defun act-do-not-found (request)
+(defun act-on-not-found (request)
   (respond-not-found request "Couldn't find that page you were looking for"))
 
 ;;
 ;; server stuff
 ;;
 
-(set-not-found-handler 'act-do-not-found)
+(set-not-found-handler 'act-on-not-found)
 
 (define-route-table
   (route :get :root "/" 'act-on-root)

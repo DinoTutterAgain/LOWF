@@ -1,13 +1,9 @@
 (defpackage :lowf.utils
-  (:use :cl))
+  (:use :cl)
+  (:import-from :alexandria
+		:make-keyword))
 
 (in-package :lowf.utils)
-
-(export 'make-keyword)
-(defun make-keyword (name)
-  "take a string, return a keyword"
-  (intern (string-upcase name)
-	  "KEYWORD"))
 
 (export 'path-to)
 (defun path-to (&optional file)

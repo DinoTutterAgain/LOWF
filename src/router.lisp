@@ -1,17 +1,11 @@
 (defpackage :lowf.router
   (:use :cl)
-  ;;(:import-from :ik.sys.lisp
-  ;;		:make-keyword)
+  (:import-from :alexandria
+  		:make-keyword)
   (:import-from :lowf.logger
 		:log-info))
 
 (in-package :lowf.router)
-
-;; (export 'make-keyword)
-(defun make-keyword (name)
-  "take a string, return a keyword"
-  (intern (string-upcase name)
-	  "KEYWORD"))
 
 ;; internal
 (defun starts-with-colon? (input-string)

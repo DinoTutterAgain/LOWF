@@ -183,7 +183,7 @@
       content)))
 
 
-(export 'respond-html-view)
+(export 'wrap-view-in-layout)
 (defun wrap-view-in-layout (view-contents)
   (render-html (funcall *layout-function* view-contents)))
 

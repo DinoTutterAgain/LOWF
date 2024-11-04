@@ -1,12 +1,12 @@
 
 (asdf:defsystem #:lowf
-  :description "A website"
+  :description "The Lisp Web Framework"
   :author "Me."
   :version "0.0.1"
   :license "GPL"
   :serial t
-  :depends-on (:postmodern ;; postgres access
-	       
+  :depends-on (;; :postmodern ;; postgres access
+	       :alexandria ;; lisp extensions
 	       :ironclad ;; crypto
 	       :cl-who ;; HTML rendering
 	       :osicat ;; POSIX functions

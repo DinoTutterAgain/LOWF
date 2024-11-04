@@ -6,9 +6,6 @@
 
 (in-package :lowf.request)
 
-;; (defun key-lookup (key-string dict-list)
-;;  (cdr (find key-string dict-list :key #'second :test 'string=)))
-
 ;; exported
 (defun path-capture-value (id request)
   (let ((captures (hunchentoot:aux-request-value :path-captures request)))
