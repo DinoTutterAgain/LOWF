@@ -26,3 +26,10 @@
 (defun present? (thing)
   "returns T if THING is not NIL"
   (not (null thing)))
+
+(export 'find-in-list)
+(defun find-in-list (key list)
+  (if list
+      (if (eq key (car list))
+	  (car (cdr list))
+	  (find-in-list key (cddr list)))))

@@ -2,10 +2,40 @@
   (:use :cl)
   (:export :with-post-parameters
 	   :path-capture-value
-	   :path-capture-value-integer))
+	   :path-capture-value-integer
+	   :with-request
+	   :request-method
+	   :request-path
+	   :request-set-captures)
+  
+  (:import-from :lowf.utils
+		:find-in-list))
 
 (in-package :lowf.request)
 
+(defparameter *request* nil)
+
+(defun decode-environment (environment)
+  environment)
+
+;;(export 'with-request)
+(defmacro with-request ((environment) &body body)
+  `(let ((*request* ,environment))
+     ,@body))
+
+(defun request-method ()
+  (find-in-list :request-method *request*))
+
+(defun request-path ()
+  (find-in-list :path-info *request*))
+
+;; used when routing
+(defun request-set-captures (path-captures)
+  (and (setf *request* (concatenate 'list
+				    *request*
+				    (list :path-captures path-captures)))
+       nil))
+  
 ;; exported
 (defun path-capture-value (id request)
   (let ((captures (hunchentoot:aux-request-value :path-captures request)))

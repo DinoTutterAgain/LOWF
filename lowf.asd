@@ -8,14 +8,15 @@
   :depends-on (;; :postmodern ;; postgres access
 	       :alexandria ;; lisp extensions
 	       :ironclad ;; crypto
-	       :cl-who ;; HTML rendering
+	       ;; :cl-who ;; HTML rendering
 	       :osicat ;; POSIX functions
 	       :cl-ppcre ;; regex
 	       :flexi-streams ;; streams
 	       :quri ;; URL parsing
-	       :hunchentoot ;; web server
+	       :woo ;; HTTP server
+	       ;; :hunchentoot ;; web server
 	       :local-time ;; time calculations
-	       :cl-base64 ;; storing big numbers as strings
+	       ;; :cl-base64 ;; storing big numbers as strings
 	       )
   
   :components ((:module "src"
@@ -27,6 +28,7 @@
 				     (:file "html-views")
 				     (:file "request")
 				     (:file "response")
+				     (:file "static-files")
 				     (:file "server")))
 				     ;;(:file "demo")))
 	       

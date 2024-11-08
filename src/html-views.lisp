@@ -168,14 +168,13 @@
   "the layout callback")
 
 (export 'define-layout)
-(defmacro define-layout ((request-var content-var) &body body)
+(defmacro define-layout ((content-var) &body body)
   `(setf *layout-function*
-	 #'(lambda (,request-var ,content-var)
+	 #'(lambda (,content-var)
 	     ,@body)))
 
 ;; default layout
-(define-layout (request content)
-  (declare (ignore request))
+(define-layout (content)
   (html:html ()
     (html:head ()
       (html:title () "Default LOWF layout"))

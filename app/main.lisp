@@ -46,8 +46,7 @@
 ;; views
 ;;
 
-(define-layout (request contents)
-  (declare (ignore request))
+(define-layout (contents)
   (list
    (html:doctype "html")
    (html:html ()
@@ -132,38 +131,37 @@
 ;; controllers
 ;;
 
-(defun respond-not-found (request message)
-  (set-response-code 404)
-  (respond-html-view request (render-route-not-found message)))
+(defun respond-not-found (message)
+  (respond-html-view (render-route-not-found message) :status 404))
 
-(defun act-on-root (request)
-  (respond-html-view request (render-root)))
+(defun act-on-root ()
+  (respond-html-view  (render-root)))
 
-(defun act-on-about (request)
-  (respond-html-view request (render-about)))
+(defun act-on-about ()
+  (respond-html-view (render-about)))
 
-(defun act-on-show-item (request)
+(defun act-on-show-item ()
   (x:if-let (item-id (path-capture-value-integer :id request))
     (x:if-let (found-item (model:find-item item-id))
-      (respond-html-view request (render-show-item found-item))
+      (respond-html-view (render-show-item found-item))
 	  
-      (respond-not-found request "Couldn't find that item"))
+      (respond-not-found "Couldn't find that item"))
 
-    (respond-not-found request "Bad or missing item ID")))
+    (respond-not-found "Bad or missing item ID")))
 
-(defun act-on-new-item (request)
-  (respond-html-view request (render-new-item)))
+(defun act-on-new-item ()
+  (respond-html-view (render-new-item)))
   
-(defun act-do-create-item (request)
+(defun act-do-create-item ()
   (format t "Howdee~%")
-  (lowf.request:with-post-parameters ((item-name "item-name")) request
+  (lowf.request:with-post-parameters ((item-name "item-name"))
     (log-info "item-name=~s" item-name)
     (let ((new-item (app.model:add-item item-name)))
       (log-info "new-item=~s" new-item)))
-  (hunchentoot:redirect "/"))
+  (respond-redirect "/"))
 
-(defun act-on-not-found (request)
-  (respond-not-found request "Couldn't find that page you were looking for"))
+(defun act-on-not-found ()
+  (respond-not-found "Couldn't find that page you were looking for"))
 
 ;;
 ;; server stuff

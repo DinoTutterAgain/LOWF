@@ -14,16 +14,26 @@
 (defun set-not-found-handler (callback)
   (setf *not-found-handler* callback))
 
-;; exported
-(defun set-response-code (code)
-  (setf (hunchentoot:return-code*) code))
-
 ;; exported (for use in server.lisp)
-(defun invoke-not-found-handler (request)
+(defun invoke-not-found-handler ()
   (when *not-found-handler*
-    (funcall *not-found-handler* request)))
+    (funcall *not-found-handler*)))
 
 (export 'respond-html-view)
-(defun respond-html-view (request view-contents)
-  ;; (maybe set the request/response mime type here?)
-  (wrap-view-in-layout view-contents))
+(defun respond-html-view (view-contents &key (status 200) headers)
+  (list status
+	headers
+	(list (wrap-view-in-layout view-contents))))
+
+(defun respond-redirect (to-path &optional permanent)
+  (list (if permanent 302 301)
+	(list :location to-path)
+	(list (format nil "You are being redirected to ~a" to-path))))
+
+(defun respond-file (path)
+  (list 200
+	nil
+	path))
+
+;; sendfile?
+
