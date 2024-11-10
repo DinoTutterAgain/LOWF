@@ -30,7 +30,6 @@
 				     (:file "response")
 				     (:file "static-files")
 				     (:file "server")))
-				     ;;(:file "demo")))
 	       
 	       (:module "app"
 			:components ((:file "model")
