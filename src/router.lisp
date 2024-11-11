@@ -22,17 +22,17 @@
 ;; internal
 (defun regexify-path (path-segments)
   "take a string like '/users/:id' and return a regex like '^\/users\/[^\/]+\/?$'"
-  
+
   (labels ((join-path (segments)
 	     (format nil "^~{~A~^\\/~}\\/?$" segments)))
-	     
+
     (loop
        for segment in path-segments
-	 
+
        if (starts-with-colon? segment)
-         collect "([^\\/]*)" into output-segments	 
+         collect "([^\\/]*)" into output-segments
          and collect (segment-to-name segment) into output-names
-	 
+
        else
          collect segment into output-segments
 
@@ -64,7 +64,7 @@
 	      (route-arg-count (route-path-arg-count entry)))
 	  (if (eq arg-count
 		  route-arg-count)
-	    
+
 	      (apply #'format (append (list nil
 					    (route-path-format-string entry))
 				      args))
@@ -79,20 +79,20 @@
 
   (loop for segment in path-segments
      with arg-count = 0
-       
+
      if (starts-with-colon? segment)
      collect "~a" into segment-parts
      and do (incf arg-count)
      else
      collect segment into segment-parts
-       
+
      finally (return (values (format nil "~{~A~^/~}" segment-parts)
 			     arg-count))))
 
 (defun add-de-routing-point (name path-string path-segments)
   (if (gethash name *de-route-table*)
       (error "Route with name '~a' already defined" name))
-      
+
   (multiple-value-bind (format-string arg-count) (build-de-route-format-string path-segments)
     (setf (gethash name *de-route-table*)
 	  (make-route-path :original-string path-string
@@ -108,7 +108,7 @@
   name
   method
   path-string
-  
+
   pattern
   match-names
 
@@ -125,7 +125,7 @@
 ;; helper
 (defun build-route-entry (name method path path-segments callback)
   (multiple-value-bind (path-pattern pattern-names) (regexify-path path-segments)
-      
+
     (make-route-entry :name name
 		      :method method
 		      :path-string path
@@ -144,14 +144,13 @@
   (when (eq method (route-entry-method entry))
     (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings (route-entry-pattern entry) path)
       (when has-match
-	;;(format t "match!~%")
 	(list t
 	      (loop
 		 for capture-value across captures
 		 for name in (route-entry-match-names entry)
-		 collect (cons (make-keyword name)
+		 collect (cons (make-keyword (string-upcase name))
 			       capture-value)))))))
-  
+
 (export 'route-request)
 (defun route-request (method path)
   (loop for entry in *route-table*

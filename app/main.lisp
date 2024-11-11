@@ -3,32 +3,39 @@
   (:local-nicknames (:html :lowf.html-view.tags)
 		    (:model :app.model)
 		    (:x :alexandria))
-  
+
   (:import-from :lowf.router
 		:define-route-table
 		:route
 		:route-path-to)
 
   (:import-from :lowf.server
-		:define-server-pre-start
+		:define-server-pre-start)
+
+  (:import-from :lowf.static-files
 		:set-public-directory)
-  
+
+  (:import-from :lowf.utils
+		:cassoc)
+
   (:import-from :lowf.logger
 		:log-info)
-  
+
   (:import-from :lowf.html-views
 		:define-layout
 		)
-  
+
   (:import-from :lowf.request
-		:with-post-parameters
-		:path-capture-value-integer)
+		:path-capture-value-integer
+		:www-form-params)
 
   (:import-from :lowf.response
 		:set-not-found-handler
 		:invoke-not-found-handler
 		:set-response-code
-		:respond-html-view))
+		:respond-html-view
+		:respond-redirect
+		:respond-plaintext))
 
 (in-package :app.main)
 
@@ -75,17 +82,17 @@
 (defun render-root ()
   (let ((open-items (app.model:open-items))
 	(open-item-count (app.model:pending-item-count)))
-    
+
     (list
      (html:h1 () "Mini TODO")
      (html:p () (html:a (:href (route-path-to :new-item)) "New item"))
-     
+
      (if (zerop open-item-count)
 	 (html:p () "CONGRATULATIONS! no open items exist!")
 	 (list
 	  (html:p () (format nil "Found ~d open items (~d total)" open-item-count (app.model:all-item-count)))
 	  (mapcar #'(lambda (item)
-		      
+
 		      (html:div (:class "item")
 			(html:h3 () (html:a (:href (route-path-to :show-item (app.model:todo-item-id item))) (app.model:todo-item-name item)))
 			(html:p () (format nil "Posted ~s" (app.model:todo-item-created-at item)))))
@@ -118,6 +125,23 @@
      (html:fieldset ()
        (html:label (:for "item-name") "Name")
        (html:input :type "text" :name "item-name" :value ""))
+
+     (html:fieldset ()
+       (html:label (:for "item-description") "Description")
+       (html:textarea (:name "item-description" :rows 10)))
+
+     (html:fieldset ()
+       (html:label (:for "item-alpha") "alpha")
+       (html:input :type "text" :name "item-alpha" :value ""))
+
+     (html:fieldset ()
+       (html:label (:for "item-beta") "beta")
+       (html:input :type "text" :name "item-beta" :value ""))
+
+     (html:fieldset ()
+       (html:label (:for "item-cappa") "cappa")
+       (html:input :type "text" :name "item-cappa" :value ""))
+
      (html:fieldset ()
        (html:button (:type "submit") "Create")))))
 
@@ -141,25 +165,32 @@
   (respond-html-view (render-about)))
 
 (defun act-on-show-item ()
-  (x:if-let (item-id (path-capture-value-integer :id request))
+  (x:if-let (item-id (path-capture-value-integer :id))
     (x:if-let (found-item (model:find-item item-id))
       (respond-html-view (render-show-item found-item))
-	  
+      ;; else
       (respond-not-found "Couldn't find that item"))
 
+    ;; else
     (respond-not-found "Bad or missing item ID")))
 
 (defun act-on-new-item ()
   (respond-html-view (render-new-item)))
-  
+
 (defun act-do-create-item ()
-  (format t "Howdee~%")
-  (lowf.request:with-post-parameters ((item-name "item-name"))
-    (log-info "item-name=~s" item-name)
-    (let ((new-item (app.model:add-item item-name)))
+  (let* ((parms (www-form-params))
+	 (item-name-value (cassoc "item-name" parms t)))
+
+    ;;(respond-plaintext (format nil "post-params=~s" parms))))
+
+    ;;  (lowf.request:with-post-parameters ((item-name "item-name"))
+    (log-info "item-name-value=~s" item-name-value)
+    (let ((new-item (app.model:add-item item-name-value)))
       (log-info "new-item=~s" new-item)))
+
   (respond-redirect "/"))
 
+(app.model:add-item "howdee")
 (defun act-on-not-found ()
   (respond-not-found "Couldn't find that page you were looking for"))
 
@@ -177,8 +208,7 @@
   (route :get :show-item "/todo/:id" 'act-on-show-item))
 
 (define-server-pre-start
-  
+
   ;; called before the server is about to run
   (set-public-directory (merge-pathnames "app/public/"
 					 (osicat:current-directory))))
-

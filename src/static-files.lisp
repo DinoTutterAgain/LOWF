@@ -4,7 +4,7 @@
 		:log-info)
   (:import-from :lowf.utils
 		:cassoc))
-		
+
 
 (in-package :lowf.static-files)
 
@@ -33,13 +33,12 @@
   ;;    the static-file-directory
   (let ((path (if (string= (subseq path 0 1) "/")
 		  (subseq path 1))))
-    
+
     (when (and *static-file-directory*
 	       (> (length path) 0))
-      
+
       (let ((full-path (merge-pathnames path *static-file-directory*)))
-	(format t "full-path=~s~%" full-path)
-	
+
 	(when (osicat:file-exists-p full-path)
 	  (let ((mime-type (identify-file-type full-path)))
 	    (log-info "sending static file ~s (~a)" path mime-type)

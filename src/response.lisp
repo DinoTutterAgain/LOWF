@@ -2,7 +2,8 @@
   (:use :cl)
   (:export :set-not-found-handler
 	   :invoke-not-found-handler
-	   :set-response-code)
+	   :set-response-code
+	   :respond-plaintext)
   (:import-from :lowf.html-views
 		:wrap-view-in-layout))
 
@@ -25,8 +26,10 @@
 	headers
 	(list (wrap-view-in-layout view-contents))))
 
-(defun respond-redirect (to-path &optional permanent)
-  (list (if permanent 302 301)
+;; TODO: headers
+
+(defun respond-redirect (to-path &optional temporary)
+  (list (if temporary 302 301)
 	(list :location to-path)
 	(list (format nil "You are being redirected to ~a" to-path))))
 
@@ -35,5 +38,9 @@
 	nil
 	path))
 
-;; sendfile?
+(defun respond-plaintext (contents)
+  (list 200
+	nil
+	(list contents)))
 
+;; sendfile?

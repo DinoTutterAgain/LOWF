@@ -4,16 +4,16 @@
   (:import-from :lowf.config
 		:config
 		:config-int)
-  
+
   (:import-from :lowf.utils
 		:present?)
-  
+
   (:import-from :lowf.logger
 		:log-info)
-  
+
   (:import-from :lowf.router
 		:route-request)
-  
+
   (:import-from :lowf.response
 		:invoke-not-found-handler)
 
@@ -22,7 +22,7 @@
 		:request-method
 		:request-path
 		:request-set-captures)
-  
+
   (:import-from :lowf.static-files
 		:maybe-serve-static-file))
 
@@ -35,7 +35,7 @@
   (with-request (env)
     (multiple-value-bind (callback captures) (route-request (request-method) (request-path))
       (request-set-captures captures)
-      
+
       (or (if callback (funcall callback))
 	  (maybe-serve-static-file (request-path))
 	  (invoke-not-found-handler)))))
@@ -58,7 +58,7 @@
     (log-info "Running server at http://~a:~d" host port)
     (if *app-setup-hook*
 	(funcall *app-setup-hook*))
-    
+
     (setf *woo-server*
 	  (woo:run #'handle-woo-request
 		   :port port
