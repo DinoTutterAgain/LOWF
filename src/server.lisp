@@ -73,7 +73,7 @@
 #|
 
 (export 'try-request)
-(defun try-request (method path)
+(defun try-request (method path &key body params)
   (let ((fake-request ()))
     ;; TODO
     ))

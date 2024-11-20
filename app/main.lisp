@@ -69,9 +69,9 @@
        (html:header ()
 	 (html:a (:href "/" :id "logo") (html:span () "Mini TODO"))
 	 (html:nav ()
-	   (html:a (:href (route-path-to :root)) "Home")
-	   (html:a (:href (route-path-to :new-item)) "Add new")
-	   (html:a (:href (route-path-to :about)) "About")))
+	   (html:a (:href (route-path-to :root)) (html:span () "Home"))
+	   (html:a (:href (route-path-to :new-item)) (html:span () "Add new"))
+	   (html:a (:href (route-path-to :about)) (html:span () "About"))))
 
        (html:main ()
 	 contents)
