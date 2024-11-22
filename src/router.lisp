@@ -384,53 +384,102 @@ capture-value)))))))
 ;;  (macro-do-thing
 ;;    (format t "in method macro-do-thing~%")))
 
-(defun build-routing-table (route-spec)
-  (labels ((process-get (args)
+;;
+;; wrapper logic
+;;
+
+(defparameter *wrapper-db* (make-hash-table))
+;; (defparameter *wrapper-nested-function* nil)
+
+;; internal
+(defun assign-wrapper (name wrapper-method)
+  (setf (gethash name *wrapper-db*) wrapper-method))
+
+;; TODO: exported
+(defmacro define-wrapper ((name next-method-var request-method-var request-path-var) &body body)
+  `(assign-wrapper ,name
+		   #'(lambda (,next-method-var ,request-method-var ,request-path-var)
+		       (declare (ignorable ,next-method-var ,request-method-var ,request-path-var))
+		       ,@body)))
+
+;; internal
+(defun find-wrapper (name)
+  (gethash name *wrapper-db*))
+
+;; internal
+;; (defmacro with-wrapper-request-passer (next-route-bloc &body body)
+;;   `(let ((*wrapper-nested-function* ,next-route-bloc))
+;;      ,@body))
+
+;; internal
+(defun pass-request-on (next-method request-method request-path)
+  (funcall next-method request-method request-path))
+
+
+;;
+;; routing table logic
+;;
+
+
+(defun build-routing-table (top-level-route-spec)
+  (declare (optimize (debug 3)))
+  
+  (labels ((process-basic-request (method-type-spec args)	     
 	     (let* ((try-path (first args))
 		    (controller-method (second args))
 		    (route-name (third args))
 		   
 		    (path-segments (cl-ppcre:split "\/" try-path))
 		    (path-regex (regexify-path path-segments)))
+
+	       ;; TODO: store ROUTE-NAME so it can be de-routed in app
 	       
-	       #'(lambda (method request-path)
-		   (if (eq method :get)
+	       #'(lambda (request-method request-path)
+		   (if (eq request-method method-type-spec)
 		       (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings path-regex request-path)
 			 (when has-match
 			   ;; set captures
-			   (format t "GET ~s~%" try-path)
+			   (format t "~s ~s~%" method-type-spec try-path)
 			   (funcall controller-method)))))))
-			   ;; (format t "process-get: args=~s~%" args)))
-	   
-	   (process-post (args)
-	     (let* ((try-path (first args))
-		    (controller-method (second args))
-		    (route-name (third args))
-		    
-		    (path-segments (cl-ppcre:split "\/" try-path))
-		    (path-regex (regexify-path path-segments)))
-	       
-	       #'(lambda (method request-path)
-		   (if (eq method :post)
-		       (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings path-regex request-path)
-			 (when has-match
-			   ;; set captures
-			   (format t "POST ~s~%" try-path)
-			   (funcall controller-method)))))))
-	     ;; #'(lambda (method path) (format t "process-post: args=~s~%" args)))
 	     
 	   (process-wrap (args)
-	     #'(lambda (method path) (format t "process-wrap: args=~s~%" args))))
-    
-    (mapcar #'(lambda (route-definition)
-		(let ((type (first route-definition)))
-		  (cond ((eq type :get)  (process-get (cdr route-definition)))
-			((eq type :post) (process-post (cdr route-definition)))
-			((eq type :wrap) (process-wrap (cdr route-definition)))
-			(t (error "Unknown route verb ~s" type)))))
-    
-	    route-spec)))
+	     (format t "process-wrap~%")
+		     
+	     (let* ((wrapper-name (first (first args)))
+		    (wrapper-method (or (find-wrapper wrapper-name)
+					(error "Can't find wrapper named ~s" wrapper-name)))
+		    
+		    (inner-spec-level (rest args))
+		    (next-function (walk-route-spec-for-level inner-spec-level)))
+	       
+	       #'(lambda (request-method request-path)
+		   (funcall wrapper-method next-function request-method request-path))))
 
+	   (walk-route-spec-for-level (route-spec)
+	     (format t "~%~%-------------------~%walk-route-spec-for-level route-spec=~s~%" route-spec)
+	     (let ((routing-functions
+		    (mapcar #'(lambda (route-definition)
+				(let ((type (first route-definition)))
+				  (cond ((eq type :get)  (process-basic-request :get (cdr route-definition)))
+					((eq type :post) (process-basic-request :post (cdr route-definition)))
+					((eq type :wrap) (process-wrap (cdr route-definition)))
+					(t (error "Unknown route verb ~s" type)))))
+			    route-spec)))
+	       (format t "done.~%")
+	       
+	       #'(lambda (request-method request-path)
+		   (loop for try-route-entry in routing-functions
+			 for result = (funcall try-route-entry request-method request-path)
+			 if result return result)))))
+	       
+	   (walk-route-spec-for-level top-level-route-spec)))
+    
+
+(define-wrapper (:must-be-logged-in next method path)
+  (format t "wrapper: must be logged in~%")
+  (let ((output (pass-request-on next method path)))
+    (format t "wrapper: ended~%")
+    output))
 
 (defun try-route-hack (method path)
   
@@ -444,24 +493,35 @@ capture-value)))))))
     
 	   (fake-login-handler ()
 	     (format t "fake-login-handler~%")
-	     :fake-login-handler))
-    
-    (let ((table (build-routing-table
-		  (list (list :get "/" #'fake-root-handler :name)
-			(list :get "/about" #'fake-about-handler)
-			(list :get "/login" 'on-login :login)
-			(list :post "/login" #'fake-login-handler)
-			(list :wrap (list :wrapper-name)
-			  (list :get "/thing-wrapped"))))))
-      (labels ((poke-routes (method path)
-		 (loop for try-route-entry in table
-		       for result = (funcall try-route-entry method path)
-		       if result return result)))
+	     :fake-login-handler)
+
+    	   (fake-thing-handler ()
+	     (format t "fake-thing-handler~%")
+	     :fake-thing-handler)
+  
+	   (fake-other-thing-handler ()
+	     (format t "fake-other-thing-handler~%")
+	     :fake-other-thing-handler))
+
+    (let ((table
+	   (list (list :get "/" #'fake-root-handler :name)
+		 (list :get "/about" #'fake-about-handler)
+		 (list :get "/login" 'on-login :login)
+		 (list :post "/login" #'fake-login-handler)
+		 (list :wrap (list :must-be-logged-in)
+		       (list :get "/thing-wrapped" #'fake-thing-handler)
+		       (list :post  "/other-thing-wrapped" #'fake-other-thing-handler)))))
+      
+      (let* ((routing-table (build-routing-table table))
+
+	     (handler-result (funcall routing-table method path)))
+
+	(if handler-result
+	    (format t "handler found: result=~s~%" handler-result)
+	    (format t "no route matches!~%"))))))
+	    
 	
-		 ;;(find-if #'(lambda (func) (and (funcall func method path)
-		;;				t))
-		;;	  table)))
-	(poke-routes method path)))))
 
 ;; :get :post :any :not-found :static-files-from
 
+;; up next: wrapper functionality and nesting route within wraps
