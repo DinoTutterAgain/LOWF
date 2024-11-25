@@ -2,8 +2,12 @@
   (:use :cl)
   (:import-from :alexandria
   		:make-keyword)
+  
   (:import-from :lowf.logger
-		:log-info))
+		:log-info)
+
+  (:import-from :lowf.request
+		:request-set-captures))
 
 (in-package :lowf.router)
 
@@ -58,6 +62,8 @@
 
 (export 'route-path-to)
 (defun route-path-to (name &rest args)
+  "#")
+#|
   (let ((entry (gethash name *de-route-table*)))
     (if entry
 	(let ((arg-count (length args))
@@ -74,7 +80,7 @@
 		     route-arg-count arg-count)))
 
 	(error "A route of name '~a' could not be found" name))))
-;; (gethash :show-item *de-route-table*)
+|#
 
 (defun build-de-route-format-string (path-segments)
 
@@ -104,9 +110,10 @@
 
 
 ;;
-;; router
+;; router (obsolete)
 ;;
 
+#|
 (defstruct route-entry
   name
   method
@@ -189,213 +196,20 @@
 	do (with-slots (name method path-string) route
 	     (format stream "~a -> [~a] ~a~%" name method path-string))))
 
-
-;; i am probably massively over-thinking this ;)
-#|
-so the idea is that all routing is done by walking through
-a function tree and the first function that returns a woo response
-is the point to stop and reply to the user request
-
-try
-- route
-- route
-- route
-- wrapper
----- route
----- route
----- route
----- wrapper
-------- route
-etc
-
-
 |#
-
-
-
-(defun build-route-handler (method path-string function)
-  (let* ((path-segments (cl-ppcre:split "\/" path-string))
-	 (path-regex (regexify-path path-segments)))
-	  
-    (lambda (request-method request-path)
-      (if (eq request-method method)
-	  (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings path-regex request-path)
-	    (when has-match
-	      ;; set captures
-	      (funcall function)))))))
-
-(defmacro try-routes ((method-var path-var) &body body)
-  `(or ,@(mapcar #'(lambda (route-tester-method)
-		     (list 'funcall route-tester-method
-			   method-var path-var))
-		 body)))
-
-(defun try-routes-2 (method path &rest route-list)
-  (find-if #'(lambda (v) (not (null v)))
-	   route-list
-	   :key #'(lambda (v) (funcall v method path))))
-
-(try-routes-2 :get "/"
-	      (build-route-handler :get "/" #'(lambda () (format t "root~%")))
-	      (build-route-handler :get "/alpha" #'(lambda () (format t "alpha~%")))
-	      (build-route-handler :get "/beta/:id" #'(lambda () (format t "beta with ID~%"))))
-
-(defun poke-router (method path)
-  (try-routes (method path)
-    (build-route-handler :get "/" #'(lambda () (format t "root~%")))
-    (build-route-handler :get "/alpha" #'(lambda () (format t "alpha~%")))
-    (build-route-handler :get "/beta/:id" #'(lambda () (format t "beta with ID~%")))))
-
-
-#|  
-  (or (funcall (build-route-handler :get "/"
-				    #'(lambda () (format t "root~%")))
-	       method path)
-      
-      (funcall (build-route-handler :get "/alpha"
-				    #'(lambda () (format t "alpha~%")))
-	       method path)
-      
-      (funcall (build-route-handler :get "/beta"
-				    #'(lambda () (format t "beta~%")))
-	       method path)
-      
-      (funcall (build-route-handler :get "/beta/:id"
-				    #'(lambda () (format t "beta with ID~%")))
-	       method path)
-      
-      (funcall (build-route-handler :get "/cappa"
-				    #'(lambda () (format t "cappa~%")))
-	       method path)      
-  ))
-|#
-
-
-
-#|
-this is for use in a macro
-(defun build-route-handler (method path-string function)
-  (let* ((path-segments (cl-ppcre:split "\/" path-string))
-	 (path-regex (regexify-path path-segments)))
-	  
-    `#'(lambda (request-method request-path)
-	 (if (eq request-method ,method)
-	     (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings ,path-regex request-path)
-	       (when has-match
-		 ;; set captures
-		 (funcall ,function)))))))
-|#
-
-(defmacro try-routes (&body body)
-  `(or
-    ,@body))
-
-(defmacro do-get (path function)
-  `(funcall #',(build-route-handler :get path function)))
-
-(defparameter *wrapper-db* (make-hash-table))
-
-(setf (gethash :flash *wrapper-db*)
-      #'(lambda (next-function)
-	  (format t "wrap: before~%")
-	  (let ((result (funcall next-function)))
-	    (format t "wrap after!~%")
-	    result)))
-
-(defmacro wrap (wrapper-name &body body)
-  (let ((wrapper-function (gethash wrapper-name *wrapper-db*)))
-    
-    `(funcall #',wrapper-function
-	      #'(lambda ()
-		  ,@body))))
-
-(TRY-ROUTES
-  (do-get "/" 'handle-root)
-  (do-get "/about" 'handle-about)
-  (do-get "/login" 'handle-login)
-  (do-post "/login" 'handle-do-login))
-
-
-
-'(define-route-table
-  (wrap :flash
-   (try
-    (get "/" 'handle-root)
-    (post "/foo" 'handle-do-thing)
-
-    (wrap :find-item
-	  (wrap :find-user-from-cookie
-		(wrap :user-must-be-logged-in
-		      (try
-		       (get "/item")))))
-
-    (serve-static-files "")
-    (invoke-not-found-handler))))
-
-
-;;		  ,method ,path-regex ,function)))))
-
-
-
-
-#|
-    (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings (route-entry-pattern entry) path)
-      (when has-match
-	(list t
-	      (loop
-		 for capture-value across captures
-		 for name in (route-entry-match-names entry)
-		 collect (cons (make-keyword (string-upcase name))
-capture-value)))))))
-|#
-
-
-
-
-
-
-;;;;;;;;;;;;;;
-
-;; i - need to wrap my head around macro expansions a bit here
-
-(defun do-thing (marker)
-  (format t "do-thing [~s]~%" marker)
-  marker)
-
-(defmacro macro-do-thing (&body body)
-  (let ((value (do-thing (eval (cons 'list (mapcar #'(lambda (body-lambda) (list 'function body-lambda))
-						   body))))))
-    `(progn
-       (do-thing :in-body)
-       (format t "macro-do-thing: value=~s~%" ',value))))
-
-;; (macro-do-thing
-;;   (format t "macro-do-thing~%"))
-
-
-(defun outer-method ()
-  (macro-do-thing
-    (build-route-handler :get "/" #'(lambda () (format t "root~%")))
-    (build-route-handler :get "/alpha" #'(lambda () (format t "alpha~%")))
-    (build-route-handler :get "/beta/:id" #'(lambda () (format t "beta with ID~%")))))
-
-
-;;(defun outer-method ()
-;;  (macro-do-thing
-;;    (format t "in method macro-do-thing~%")))
 
 ;;
 ;; wrapper logic
 ;;
 
+;; internal
 (defparameter *wrapper-db* (make-hash-table))
-;; (defparameter *wrapper-nested-function* nil)
 
 ;; internal
 (defun assign-wrapper (name wrapper-method)
   (setf (gethash name *wrapper-db*) wrapper-method))
 
-;; TODO: exported
+(export 'define-wrapper)
 (defmacro define-wrapper ((name next-method-var request-method-var request-path-var) &body body)
   `(assign-wrapper ,name
 		   #'(lambda (,next-method-var ,request-method-var ,request-path-var)
@@ -406,12 +220,7 @@ capture-value)))))))
 (defun find-wrapper (name)
   (gethash name *wrapper-db*))
 
-;; internal
-;; (defmacro with-wrapper-request-passer (next-route-bloc &body body)
-;;   `(let ((*wrapper-nested-function* ,next-route-bloc))
-;;      ,@body))
-
-;; internal
+(export 'pass-request-on)
 (defun pass-request-on (next-method request-method request-path)
   (funcall next-method request-method request-path))
 
@@ -420,7 +229,7 @@ capture-value)))))))
 ;; routing table logic
 ;;
 
-
+;; internal
 (defun build-routing-table (top-level-route-spec)
   (declare (optimize (debug 3)))
   
@@ -435,10 +244,11 @@ capture-value)))))))
 	       ;; TODO: store ROUTE-NAME so it can be de-routed in app
 	       
 	       #'(lambda (request-method request-path)
-		   (if (eq request-method method-type-spec)
+		   (if (or (eq request-method :any)
+			   (eq request-method method-type-spec))
 		       (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings path-regex request-path)
 			 (when has-match
-			   ;; set captures
+			   (request-set-captures captures)
 			   (format t "~s ~s~%" method-type-spec try-path)
 			   (funcall controller-method)))))))
 	     
@@ -455,14 +265,36 @@ capture-value)))))))
 	       #'(lambda (request-method request-path)
 		   (funcall wrapper-method next-function request-method request-path))))
 
+	   (process-not-found (args)
+	     (let ((not-found-handler (first args)))
+	     
+	       #'(lambda (request-method request-path)
+		   (declare (ignore request-method request-path)) ;; do we?
+		   (funcall not-found-handler))))
+
+	   (process-static-files (args)
+	     (declare (ignore args))
+	     ;; TODO: args has source directory
+	     
+	     #'(lambda (request-method request-path)
+		 (declare (ignore request-path))
+		 (if (eq request-method :get)
+		     nil))) ;; something like (response-send-file request-path)
+	     
+
 	   (walk-route-spec-for-level (route-spec)
 	     (format t "~%~%-------------------~%walk-route-spec-for-level route-spec=~s~%" route-spec)
 	     (let ((routing-functions
 		    (mapcar #'(lambda (route-definition)
 				(let ((type (first route-definition)))
-				  (cond ((eq type :get)  (process-basic-request :get (cdr route-definition)))
-					((eq type :post) (process-basic-request :post (cdr route-definition)))
+				  (cond ((find type '(:get :post :put :delete :head :patch :any))
+					 (process-basic-request type (cdr route-definition)))
+					
 					((eq type :wrap) (process-wrap (cdr route-definition)))
+					((eq type :not-found) (process-not-found (cdr route-definition)))
+					((eq type :static-files) (process-static-files (cdr route-definition)))
+					
+					;; static files
 					(t (error "Unknown route verb ~s" type)))))
 			    route-spec)))
 	       (format t "done.~%")
@@ -473,8 +305,25 @@ capture-value)))))))
 			 if result return result)))))
 	       
 	   (walk-route-spec-for-level top-level-route-spec)))
-    
 
+(defparameter *main-routing-method*
+  #'(lambda (method path)
+      (list 200 () (format nil "No routing table defined! (~s ~s)" method path))))
+
+(export 'dispatch-request-for-routing)
+(defun dispatch-request-for-routing (method path)
+  (funcall *main-routing-method* method path))
+
+(export 'define-route-table)
+(defun define-route-table (route-spec)
+  (setf *main-routing-method* (build-routing-table route-spec)))
+
+;;
+;; demo hacking
+;;
+
+
+#|
 (define-wrapper (:must-be-logged-in next method path)
   (format t "wrapper: must be logged in~%")
   (let ((output (pass-request-on next method path)))
@@ -501,7 +350,11 @@ capture-value)))))))
   
 	   (fake-other-thing-handler ()
 	     (format t "fake-other-thing-handler~%")
-	     :fake-other-thing-handler))
+	     :fake-other-thing-handler)
+
+	   (fake-not-found-handler ()
+	     (format t "That route was not found~%")
+	     :not-found))
 
     (let ((table
 	   (list (list :get "/" #'fake-root-handler :name)
@@ -510,7 +363,8 @@ capture-value)))))))
 		 (list :post "/login" #'fake-login-handler)
 		 (list :wrap (list :must-be-logged-in)
 		       (list :get "/thing-wrapped" #'fake-thing-handler)
-		       (list :post  "/other-thing-wrapped" #'fake-other-thing-handler)))))
+		       (list :post  "/other-thing-wrapped" #'fake-other-thing-handler))
+		 (list :not-found #'fake-not-found-handler))))
       
       (let* ((routing-table (build-routing-table table))
 
@@ -519,9 +373,45 @@ capture-value)))))))
 	(if handler-result
 	    (format t "handler found: result=~s~%" handler-result)
 	    (format t "no route matches!~%"))))))
-	    
-	
 
-;; :get :post :any :not-found :static-files-from
 
-;; up next: wrapper functionality and nesting route within wraps
+(defun fake-root-handler ()
+  :fake-root-handler)
+
+(define-route-table
+    `((:get "/" fake-root-handler :name)
+      (:get "/about" fake-about-handler)
+      (:get "/login" 'on-login :login)
+      (:post "/login" 'fake-login-handler)
+      (:wrap (:must-be-logged-in)
+	(:get "/thing-wrapped" 'fake-thing-handler)
+	(:post  "/other-thing-wrapped" 'fake-other-thing-handler))
+      (:not-found 'fake-not-found-handler)))
+|#
+
+
+#|
+
+going to see if i can collect all these down here
+
+TODO:
+* more http verbs (and :any)
+* not found handler
+* static file handler
+* make 'build route table' API in to a macro
+..- with methods for defining route points
+- wrappers: if i redefine a wrapper method, do i need to rebuild the routing table?
+- `route-name` so we can 'de-route' in app
+- remove `puts`
+
+integration:
+- exporting all the right bits
+..- integrate in to server
+- logging?
+- finish static file handler
+
+CAVEAT:
+- think about optimisation
+- make 'dev' mode be as flexible as possible, in 'prod' mode- be fast
+
+|#

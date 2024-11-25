@@ -198,17 +198,18 @@
 ;; server stuff
 ;;
 
-(set-not-found-handler 'act-on-not-found)
+;;(set-not-found-handler 'act-on-not-found)
 
 (define-route-table
-  (route :get :root "/" 'act-on-root)
-  (route :get :about "/about" 'act-on-about)
-  (route :get :new-item "/todo/new" 'act-on-new-item)
-  (route :post :create-item "/todo/new" 'act-do-create-item)
-  (route :get :show-item "/todo/:id" 'act-on-show-item))
+  `((:get  "/" act-on-root :root)
+    (:get  "/about" act-on-about :about)
+    (:get  "/todo/new" act-on-new-item :new-item)
+    (:post "/todo/new" act-do-create-item  :create-item)
+    (:get  "/todo/:id" act-on-show-item :show-item)
+    (:not-found act-on-not-found)))
 
 (define-server-pre-start
-
+  )
   ;; called before the server is about to run
-  (set-public-directory (merge-pathnames "app/public/"
-					 (osicat:current-directory))))
+  ;; (set-public-directory (merge-pathnames "app/public/"
+  ;;					 (osicat:current-directory))))
