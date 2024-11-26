@@ -7,13 +7,16 @@
 		:log-info)
 
   (:import-from :lowf.request
-		:request-set-captures))
+		:request-set-captures)
+
+  (:import-from :lowf.response
+		:respond-send-file))
 
 (in-package :lowf.router)
 
 ;; internal
 (defun starts-with-colon? (input-string)
-  "Does input-string start with a :?"
+  "Does input-string start with a :?"<
   (and (> (length input-string) 1)
        (eq (char input-string 0) #\:)))
 
@@ -62,8 +65,6 @@
 
 (export 'route-path-to)
 (defun route-path-to (name &rest args)
-  "#")
-#|
   (let ((entry (gethash name *de-route-table*)))
     (if entry
 	(let ((arg-count (length args))
@@ -80,7 +81,6 @@
 		     route-arg-count arg-count)))
 
 	(error "A route of name '~a' could not be found" name))))
-|#
 
 (defun build-de-route-format-string (path-segments)
 
@@ -241,7 +241,8 @@
 		    (path-segments (cl-ppcre:split "\/" try-path))
 		    (path-regex (regexify-path path-segments)))
 
-	       ;; TODO: store ROUTE-NAME so it can be de-routed in app
+	       (when route-name
+		 (add-de-routing-point route-name try-path path-segments))
 	       
 	       #'(lambda (request-method request-path)
 		   (if (or (eq request-method :any)
@@ -249,41 +250,42 @@
 		       (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings path-regex request-path)
 			 (when has-match
 			   (request-set-captures captures)
-			   (format t "~s ~s~%" method-type-spec try-path)
+			   (log-info "~s ~s" method-type-spec try-path)
 			   (funcall controller-method)))))))
 	     
-	   (process-wrap (args)
-	     (format t "process-wrap~%")
-		     
+	   (process-wrap (args)		     
 	     (let* ((wrapper-name (first (first args)))
-		    (wrapper-method (or (find-wrapper wrapper-name)
-					(error "Can't find wrapper named ~s" wrapper-name)))
+		    ;; (wrapper-method (or (find-wrapper wrapper-name)
+		    ;;		(error "Can't find wrapper named ~s" wrapper-name)))
 		    
 		    (inner-spec-level (rest args))
 		    (next-function (walk-route-spec-for-level inner-spec-level)))
+
+	       ;; a quick sanity test when defining the routing table
+	       (unless (find-wrapper wrapper-name)
+		 (error "Can't find wrapper named ~s" wrapper-name))
 	       
 	       #'(lambda (request-method request-path)
-		   (funcall wrapper-method next-function request-method request-path))))
+		   (let ((wrapper-method (or (find-wrapper wrapper-name)
+					     (error "Can't find wrapper named ~s" wrapper-name))))
+		     (funcall wrapper-method next-function request-method request-path)))))
 
 	   (process-not-found (args)
 	     (let ((not-found-handler (first args)))
 	     
 	       #'(lambda (request-method request-path)
-		   (declare (ignore request-method request-path)) ;; do we?
+		   (log-info "~s ~s (Not Found)" request-method request-path)
 		   (funcall not-found-handler))))
 
 	   (process-static-files (args)
-	     (declare (ignore args))
-	     ;; TODO: args has source directory
-	     
-	     #'(lambda (request-method request-path)
-		 (declare (ignore request-path))
-		 (if (eq request-method :get)
-		     nil))) ;; something like (response-send-file request-path)
+	     (let ((base-dir (first args)))
+	       
+	       #'(lambda (request-method request-path)
+		   (if (eq request-method :get)
+		       (respond-send-file base-dir request-path)))))
 	     
 
 	   (walk-route-spec-for-level (route-spec)
-	     (format t "~%~%-------------------~%walk-route-spec-for-level route-spec=~s~%" route-spec)
 	     (let ((routing-functions
 		    (mapcar #'(lambda (route-definition)
 				(let ((type (first route-definition)))
@@ -294,10 +296,8 @@
 					((eq type :not-found) (process-not-found (cdr route-definition)))
 					((eq type :static-files) (process-static-files (cdr route-definition)))
 					
-					;; static files
 					(t (error "Unknown route verb ~s" type)))))
 			    route-spec)))
-	       (format t "done.~%")
 	       
 	       #'(lambda (request-method request-path)
 		   (loop for try-route-entry in routing-functions
@@ -316,7 +316,9 @@
 
 (export 'define-route-table)
 (defun define-route-table (route-spec)
-  (setf *main-routing-method* (build-routing-table route-spec)))
+  (reset-de-routing-table)
+  (setf *main-routing-method* (build-routing-table route-spec))
+  t)
 
 ;;
 ;; demo hacking
@@ -400,15 +402,16 @@ TODO:
 * static file handler
 * make 'build route table' API in to a macro
 ..- with methods for defining route points
-- wrappers: if i redefine a wrapper method, do i need to rebuild the routing table?
-- `route-name` so we can 'de-route' in app
-- remove `puts`
+* wrappers: if i redefine a wrapper method, do i need to rebuild the routing table?
+* `route-name` so we can 'de-route' in app
+* remove `puts`
 
 integration:
-- exporting all the right bits
-..- integrate in to server
-- logging?
+* exporting all the right bits
+..* integrate in to server
+* logging?
 - finish static file handler
+- some way of printing the routing table?
 
 CAVEAT:
 - think about optimisation

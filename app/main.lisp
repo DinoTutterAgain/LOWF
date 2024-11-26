@@ -7,7 +7,9 @@
   (:import-from :lowf.router
 		:define-route-table
 		:route
-		:route-path-to)
+		:route-path-to
+		:pass-request-on
+		:define-wrapper)
 
   (:import-from :lowf.server
 		:define-server-pre-start)
@@ -200,12 +202,22 @@
 
 ;;(set-not-found-handler 'act-on-not-found)
 
+(define-wrapper (:demo-wrapper next method path)
+  (log-info "Demo Wrapper")
+  (let ((output (pass-request-on next method path)))
+    output))
+
 (define-route-table
   `((:get  "/" act-on-root :root)
     (:get  "/about" act-on-about :about)
-    (:get  "/todo/new" act-on-new-item :new-item)
-    (:post "/todo/new" act-do-create-item  :create-item)
-    (:get  "/todo/:id" act-on-show-item :show-item)
+    (:wrap (:demo-wrapper)
+      (:get  "/todo/new" act-on-new-item :new-item)
+      (:post "/todo/new" act-do-create-item  :create-item)
+      (:get  "/todo/:id" act-on-show-item :show-item))
+
+    (:static-files ,(merge-pathnames "app/public/"
+  				     (osicat:current-directory)))
+    ;; must be last
     (:not-found act-on-not-found)))
 
 (define-server-pre-start

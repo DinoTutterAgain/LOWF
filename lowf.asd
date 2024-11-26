@@ -28,7 +28,6 @@
 				     (:file "html-view-tags")
 				     (:file "html-views")
 				     (:file "response")
-				     (:file "static-files")
 				     (:file "server")))
 	       
 	       (:module "app"
