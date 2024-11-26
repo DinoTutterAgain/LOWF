@@ -5,44 +5,29 @@
 		:config
 		:config-int)
 
-  (:import-from :lowf.utils
-		:present?)
-
   (:import-from :lowf.logger
 		:log-info)
 
   (:import-from :lowf.router
 		:dispatch-request-for-routing)
 
-  (:import-from :lowf.response
-		:invoke-not-found-handler)
-
   (:import-from :lowf.request
 		:with-request
 		:request-method
-		:request-path
-		:request-set-captures)
-
-  (:import-from :lowf.static-files
-		:maybe-serve-static-file))
+		:request-path))
 
 (in-package :lowf.server)
 
+;; internal
 (defparameter *app-setup-hook* nil)
+
+;; internal
 (defparameter *woo-server* nil)
 
+;; internal
 (defun handle-woo-request (env)
   (with-request (env)
     (dispatch-request-for-routing (request-method) (request-path))))
-
-#|
-    (multiple-value-bind (callback captures) (route-request (request-method) (request-path))
-      (request-set-captures captures)
-
-      (or (if callback (funcall callback))
-	  (maybe-serve-static-file (request-path))
-	  (invoke-not-found-handler)))))
-|#
 
 ;;
 ;; server functions

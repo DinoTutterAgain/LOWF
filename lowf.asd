@@ -8,13 +8,11 @@
   :depends-on (;; :postmodern ;; postgres access
 	       :alexandria ;; lisp extensions
 	       :ironclad ;; crypto
-	       ;; :cl-who ;; HTML rendering
 	       :osicat ;; POSIX functions
 	       :cl-ppcre ;; regex
 	       :flexi-streams ;; streams
 	       :quri ;; URL parsing
 	       :woo ;; HTTP server
-	       ;; :hunchentoot ;; web server
 	       :local-time ;; time calculations
 	       ;; :cl-base64 ;; storing big numbers as strings
 	       )
@@ -24,10 +22,10 @@
 				     (:file "config")
 				     (:file "logger")
 				     (:file "request")
-				     (:file "router")
 				     (:file "html-view-tags")
 				     (:file "html-views")
 				     (:file "response")
+				     (:file "router")
 				     (:file "server")))
 	       
 	       (:module "app"

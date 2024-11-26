@@ -6,16 +6,12 @@
 
   (:import-from :lowf.router
 		:define-route-table
-		:route
 		:route-path-to
 		:pass-request-on
 		:define-wrapper)
 
   (:import-from :lowf.server
 		:define-server-pre-start)
-
-  (:import-from :lowf.static-files
-		:set-public-directory)
 
   (:import-from :lowf.utils
 		:cassoc)
@@ -24,17 +20,13 @@
 		:log-info)
 
   (:import-from :lowf.html-views
-		:define-layout
-		)
+		:define-layout)
 
   (:import-from :lowf.request
 		:path-capture-value-integer
 		:www-form-params)
 
   (:import-from :lowf.response
-		:set-not-found-handler
-		:invoke-not-found-handler
-		:set-response-code
 		:respond-html-view
 		:respond-redirect
 		:respond-plaintext))
@@ -192,15 +184,14 @@
 
   (respond-redirect "/"))
 
-(app.model:add-item "howdee")
+;; (app.model:add-item "howdee")
+
 (defun act-on-not-found ()
   (respond-not-found "Couldn't find that page you were looking for"))
 
 ;;
 ;; server stuff
 ;;
-
-;;(set-not-found-handler 'act-on-not-found)
 
 (define-wrapper (:demo-wrapper next method path)
   (log-info "Demo Wrapper")
@@ -222,6 +213,3 @@
 
 (define-server-pre-start
   )
-  ;; called before the server is about to run
-  ;; (set-public-directory (merge-pathnames "app/public/"
-  ;;					 (osicat:current-directory))))

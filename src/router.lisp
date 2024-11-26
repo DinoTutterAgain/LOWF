@@ -10,7 +10,8 @@
 		:request-set-captures)
 
   (:import-from :lowf.response
-		:respond-send-file))
+		:respond-send-file
+		:respond-plaintext))
 
 (in-package :lowf.router)
 
@@ -108,96 +109,6 @@
 			   :format-string format-string
 			   :arg-count arg-count))))
 
-
-;;
-;; router (obsolete)
-;;
-
-#|
-(defstruct route-entry
-  name
-  method
-  path-string
-
-  pattern
-  match-names
-
-  callback)
-  ;format
-  ;format-args)
-
-(defparameter *route-table* nil)
-
-(export 'reset-route-table)
-(defun reset-route-table ()
-  (setf *route-table* nil))
-
-;; helper
-(defun build-route-entry (name method path path-segments callback)
-  (multiple-value-bind (path-pattern pattern-names) (regexify-path path-segments)
-
-    (make-route-entry :name name
-		      :method method
-		      :path-string path
-		      :pattern path-pattern
-		      :match-names pattern-names
-		      :callback callback)))
-
-;;(export 'add-route-point)
-(defun add-routing-point (name method path path-segments callback)
-  (setf *route-table*
-	(append *route-table*
-		(list (build-route-entry name method path path-segments callback)))))
-
-;; internal
-(defun match-for-path (entry method path)
-  (when (eq method (route-entry-method entry))
-    (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings (route-entry-pattern entry) path)
-      (when has-match
-	(list t
-	      (loop
-		 for capture-value across captures
-		 for name in (route-entry-match-names entry)
-		 collect (cons (make-keyword (string-upcase name))
-			       capture-value)))))))
-
-(export 'route-request)
-(defun route-request (method path)
-  (loop for entry in *route-table*
-     for (found matches) = (match-for-path entry method path)
-     if found
-     do (log-info "found ~a handler" (route-entry-name entry))
-     and do (return (values (route-entry-callback entry)
-			    matches))))
-
-
-;;(export 'define-route-point)
-(defun define-route-point (name method path-string callback)
-  (let ((path-segments (cl-ppcre:split "\/" path-string)))
-    (add-routing-point name method path-string path-segments callback)
-    (add-de-routing-point name path-string path-segments)
-    t))
-
-(export 'route)
-(defun route ())
-
-(export 'define-route-table)
-(defmacro define-route-table (&body body)
-  (let ((route-name (intern "ROUTE" *package*)))
-    `(labels ((,route-name (method name path callback)
-		(define-route-point name method path callback)))
-       (reset-route-table)
-       (reset-de-routing-table)
-       ,@body)))
-
-(export 'print-route-table)
-(defun print-route-table (&optional (stream t))
-  (loop for route in *route-table*
-	do (with-slots (name method path-string) route
-	     (format stream "~a -> [~a] ~a~%" name method path-string))))
-
-|#
-
 ;;
 ;; wrapper logic
 ;;
@@ -257,10 +168,7 @@
 			     (funcall controller-method))))))))
 	     
 	   (process-wrap (args)		     
-	     (let* ((wrapper-name (first (first args)))
-		    ;; (wrapper-method (or (find-wrapper wrapper-name)
-		    ;;		(error "Can't find wrapper named ~s" wrapper-name)))
-		    
+	     (let* ((wrapper-name (first (first args)))		    
 		    (inner-spec-level (rest args))
 		    (next-function (walk-route-spec-for-level inner-spec-level)))
 
@@ -311,7 +219,7 @@
 
 (defparameter *main-routing-method*
   #'(lambda (method path)
-      (list 200 () (format nil "No routing table defined! (~s ~s)" method path))))
+      (respond-plaintext (format nil "No routing table defined! (~s ~s)" method path))))
 
 (export 'dispatch-request-for-routing)
 (defun dispatch-request-for-routing (method path)
@@ -322,78 +230,6 @@
   (reset-de-routing-table)
   (setf *main-routing-method* (build-routing-table route-spec))
   t)
-
-;;
-;; demo hacking
-;;
-
-
-#|
-(define-wrapper (:must-be-logged-in next method path)
-  (format t "wrapper: must be logged in~%")
-  (let ((output (pass-request-on next method path)))
-    (format t "wrapper: ended~%")
-    output))
-
-(defun try-route-hack (method path)
-  
-  (labels ((fake-root-handler ()
-	     (format t "fake-root-handler~%")
-	     :fake-root-handler)
-	   
-	   (fake-about-handler ()
-	     (format t "fake-about-handler~%")
-	     :fake-about-handler)
-    
-	   (fake-login-handler ()
-	     (format t "fake-login-handler~%")
-	     :fake-login-handler)
-
-    	   (fake-thing-handler ()
-	     (format t "fake-thing-handler~%")
-	     :fake-thing-handler)
-  
-	   (fake-other-thing-handler ()
-	     (format t "fake-other-thing-handler~%")
-	     :fake-other-thing-handler)
-
-	   (fake-not-found-handler ()
-	     (format t "That route was not found~%")
-	     :not-found))
-
-    (let ((table
-	   (list (list :get "/" #'fake-root-handler :name)
-		 (list :get "/about" #'fake-about-handler)
-		 (list :get "/login" 'on-login :login)
-		 (list :post "/login" #'fake-login-handler)
-		 (list :wrap (list :must-be-logged-in)
-		       (list :get "/thing-wrapped" #'fake-thing-handler)
-		       (list :post  "/other-thing-wrapped" #'fake-other-thing-handler))
-		 (list :not-found #'fake-not-found-handler))))
-      
-      (let* ((routing-table (build-routing-table table))
-
-	     (handler-result (funcall routing-table method path)))
-
-	(if handler-result
-	    (format t "handler found: result=~s~%" handler-result)
-	    (format t "no route matches!~%"))))))
-
-
-(defun fake-root-handler ()
-  :fake-root-handler)
-
-(define-route-table
-    `((:get "/" fake-root-handler :name)
-      (:get "/about" fake-about-handler)
-      (:get "/login" 'on-login :login)
-      (:post "/login" 'fake-login-handler)
-      (:wrap (:must-be-logged-in)
-	(:get "/thing-wrapped" 'fake-thing-handler)
-	(:post  "/other-thing-wrapped" 'fake-other-thing-handler))
-      (:not-found 'fake-not-found-handler)))
-|#
-
 
 #|
 

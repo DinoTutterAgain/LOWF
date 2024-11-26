@@ -17,17 +17,16 @@
 
 (defparameter *request* nil)
 
-(defun decode-environment (environment)
-  environment)
-
-;;(export 'with-request)
+;; exported
 (defmacro with-request ((environment) &body body)
   `(let ((*request* ,environment))
      ,@body))
 
+;; exported
 (defun request-method ()
   (getf *request* :request-method))
 
+;; exported
 (defun request-path ()
   (getf *request* :path-info))
 
