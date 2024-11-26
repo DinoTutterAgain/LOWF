@@ -238,20 +238,23 @@
 		    (controller-method (second args))
 		    (route-name (third args))
 		   
-		    (path-segments (cl-ppcre:split "\/" try-path))
-		    (path-regex (regexify-path path-segments)))
+		    (path-segments (cl-ppcre:split "\/" try-path)))
 
-	       (when route-name
-		 (add-de-routing-point route-name try-path path-segments))
-	       
-	       #'(lambda (request-method request-path)
-		   (if (or (eq request-method :any)
-			   (eq request-method method-type-spec))
-		       (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings path-regex request-path)
-			 (when has-match
-			   (request-set-captures captures)
-			   (log-info "~s ~s" method-type-spec try-path)
-			   (funcall controller-method)))))))
+	       (multiple-value-bind (path-regex pattern-names) (regexify-path path-segments)
+		 
+		 (when route-name
+		   (add-de-routing-point route-name try-path path-segments))
+		 
+		 #'(lambda (request-method request-path)
+		     
+		     (if (or (eq request-method :any)
+			     (eq request-method method-type-spec))
+			 
+			 (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings path-regex request-path)
+			   (when has-match
+			     (request-set-captures pattern-names captures)
+			     (log-info "~s ~s" method-type-spec try-path)
+			     (funcall controller-method))))))))
 	     
 	   (process-wrap (args)		     
 	     (let* ((wrapper-name (first (first args)))
@@ -405,12 +408,13 @@ TODO:
 * wrappers: if i redefine a wrapper method, do i need to rebuild the routing table?
 * `route-name` so we can 'de-route' in app
 * remove `puts`
+* fixed path segment value capturing
 
 integration:
 * exporting all the right bits
 ..* integrate in to server
 * logging?
-- finish static file handler
+* finish static file handler
 - some way of printing the routing table?
 
 CAVEAT:

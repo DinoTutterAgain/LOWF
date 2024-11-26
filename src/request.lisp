@@ -32,9 +32,16 @@
   (getf *request* :path-info))
 
 ;; used when routing
-(defun request-set-captures (path-captures)
-  (and (setf (getf *request* :path-captures) path-captures)
-       nil))
+(defun request-set-captures (path-segment-names path-capture-values)
+  (let ((path-captures
+	 (loop
+	       for capture-value across path-capture-values
+	       for name in path-segment-names
+	       collect (cons (x:make-keyword (string-upcase name))
+			     capture-value))))
+
+    (and (setf (getf *request* :path-captures) path-captures)
+	 nil)))
 
 
 ;; exported
