@@ -6,6 +6,7 @@
     text-decoration: none;
     color: inherit;
     font-size: inherit;
+    border: none;
 }
 
 body {
@@ -47,9 +48,56 @@ header nav a:hover {
     color: #000;
 }
 
-
 footer p {
     text-align: center;
     font-size: 0.85em;
     color: #777;
+}
+
+main #outer {
+    padding: 0.5rem;
+    width: 80vw;
+}
+
+main h1, h2, h3, h4, h5, h6 {
+    font-weight: bold;
+    font-family: serif;
+    margin-bottom: 0.75em;
+}
+
+main h1 {
+    font-size: 2.5em;
+}
+
+main p {
+    line-height: 2em;
+}
+
+main a {
+    color: #356dae;
+    text-decoration: underline;
+}
+
+main form fieldset {
+    margin-bottom: 1rem;
+}
+
+main form label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+main form input, textarea {
+    border: 1px solid #888;
+    padding: 0.5rem;
+    background-color: #dcedf5;
+    width: 100%;
+}
+
+main form button {
+    border: 2px solid #888;
+    padding: 0.5rem;
+    background-color: #dcedf5;
+    font-weight: bold;
 }

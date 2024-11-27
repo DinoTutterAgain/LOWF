@@ -61,7 +61,7 @@
 
      (html:body ()
        (html:header ()
-	 (html:a (:href "/" :id "logo") (html:span () "Mini TODO"))
+	 (html:a (:href "/" :id "logo") (html:span () "Mini TODO&#9745;"))
 	 (html:nav ()
 	   (html:a (:href (route-path-to :root)) (html:span () "Home"))
 	   (html:a (:href (route-path-to :new-item)) (html:span () "Add new"))
