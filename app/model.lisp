@@ -11,6 +11,7 @@
 	   
 	   :todo-item-id
 	   :todo-item-name
+	   :todo-item-description
 	   :todo-item-created-at
 	   :todo-item-completed-on
 	   :todo-item-is-complete?))
@@ -20,10 +21,12 @@
 (defstruct todo-item
   id
   name
+  description
   created-at
   completed-on)
 
 (defparameter *todo-items* nil)
+;; (setf *todo-items* nil)
 
 (let ((current-id-value 0))
   (defun next-id ()
@@ -48,9 +51,10 @@
 (defun all-item-count ()
   (length *todo-items*))
 
-(defun add-item (name)
+(defun add-item (name description)
   (push (make-todo-item :id (next-id)
 			:name name
+			:description description
 			:created-at (local-time:now))
 	*todo-items*))
 

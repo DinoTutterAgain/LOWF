@@ -11,6 +11,8 @@
 	   :request-method
 	   :request-path
 	   :request-set-captures
+	   :request-headers
+	   :request-all-cookies
 	   :www-form-params))
 
 (in-package :lowf.request)
@@ -29,6 +31,16 @@
 ;; exported
 (defun request-path ()
   (getf *request* :path-info))
+
+;; exported
+(defun request-headers ()
+  (getf *request* :headers))
+  
+(defun request-all-cookies ()
+  (x:if-let (cookie (gethash "cookie" (request-headers)))
+    (mapcar #'(lambda (nibble)
+                (quri:url-decode-params nibble))
+            (ppcre:split "; " cookie))))
 
 ;; used when routing
 (defun request-set-captures (path-segment-names path-capture-values)
