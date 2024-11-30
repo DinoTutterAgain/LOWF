@@ -93,27 +93,23 @@
     (cassoc extension *extension-to-mimetype* t)))
 
 ;; exported
-(defun respond-send-file (base-dir request-path headers)
+(defun respond-send-file (base-dir request-path &optional headers)
   ;; TODO make is so people can't request files outside of
   ;;    the static-file-directory (verify this?)
-  (let (
-	(request-path (if (string= (subseq request-path 0 1) "/")
-			  (subseq request-path 1)
-			  request-path)))
+  (let ((request-path (if (string= (subseq request-path 0 1) "/")
+			                    (subseq request-path 1)
+			                    request-path)))
 
     (when (> (length request-path) 0)
 
       (let ((full-path (merge-pathnames request-path base-dir)))
 
-	(when (osicat:file-exists-p full-path)
-	  (let ((mime-type (identify-file-type full-path)))
-	    (log-info "sending static file ~s (~a)" request-path mime-type)
-	    (list 200
-		  (list :content-type mime-type)
-		  full-path)))))))
-
-(defun response-set-cookie (response name value expires)
-  )
+	      (when (osicat:file-exists-p full-path)
+	        (let ((mime-type (identify-file-type full-path)))
+	          (log-info "sending static file ~s (~a)" request-path mime-type)
+	          (list 200
+		              (list :content-type mime-type)
+		              full-path)))))))
 
 
 #|

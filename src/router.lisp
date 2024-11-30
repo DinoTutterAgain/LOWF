@@ -145,77 +145,78 @@
   (declare (optimize (debug 3)))
   
   (labels ((process-basic-request (method-type-spec args)	     
-	     (let* ((try-path (first args))
-		    (controller-method (second args))
-		    (route-name (third args))
-		   
-		    (path-segments (cl-ppcre:split "\/" try-path)))
+	           (let* ((try-path (first args))
+		                (controller-method (second args))
+		                (route-name (third args))
+		                
+		                (path-segments (cl-ppcre:split "\/" try-path)))
 
-	       (multiple-value-bind (path-regex pattern-names) (regexify-path path-segments)
-		 
-		 (when route-name
-		   (add-de-routing-point route-name try-path path-segments))
-		 
-		 #'(lambda (request-method request-path)
-		     
-		     (if (or (eq request-method :any)
-			     (eq request-method method-type-spec))
-			 
-			 (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings path-regex request-path)
-			   (when has-match
-			     (request-set-captures pattern-names captures)
-			     (log-info "~s ~s" method-type-spec try-path)
-			     (funcall controller-method))))))))
-	     
-	   (process-wrap (args)		     
-	     (let* ((wrapper-name (first (first args)))		    
-		    (inner-spec-level (rest args))
-		    (next-function (walk-route-spec-for-level inner-spec-level)))
+	             (multiple-value-bind (path-regex pattern-names) (regexify-path path-segments)
+		             
+		             (when route-name
+		               (add-de-routing-point route-name try-path path-segments))
+		             
+		             #'(lambda (request-method request-path)
+		                 
+		                 (if (or (eq request-method :any)
+			                       (eq request-method method-type-spec))
+			                   
+			                   (multiple-value-bind (has-match captures) (cl-ppcre:scan-to-strings path-regex request-path)
+			                     (when has-match
+                             ;; FIXME: set back the method and path
+			                       (request-set-captures pattern-names captures)
+			                       (log-info "~s ~s" method-type-spec try-path)
+			                       (funcall controller-method))))))))
+	         
+	         (process-wrap (args)		     
+	           (let* ((wrapper-name (first (first args)))		    
+		                (inner-spec-level (rest args))
+		                (next-function (walk-route-spec-for-level inner-spec-level)))
 
-	       ;; a quick sanity test when defining the routing table
-	       (unless (find-wrapper wrapper-name)
-		 (error "Can't find wrapper named ~s" wrapper-name))
-	       
-	       #'(lambda (request-method request-path)
-		   (let ((wrapper-method (or (find-wrapper wrapper-name)
-					     (error "Can't find wrapper named ~s" wrapper-name))))
-		     (funcall wrapper-method next-function request-method request-path)))))
+	             ;; a quick sanity test when defining the routing table
+	             (unless (find-wrapper wrapper-name)
+		             (error "Can't find wrapper named ~s" wrapper-name))
+	             
+	             #'(lambda (request-method request-path)
+		               (let ((wrapper-method (or (find-wrapper wrapper-name)
+					                                   (error "Can't find wrapper named ~s" wrapper-name))))
+		                 (funcall wrapper-method next-function request-method request-path)))))
 
-	   (process-not-found (args)
-	     (let ((not-found-handler (first args)))
-	     
-	       #'(lambda (request-method request-path)
-		   (log-info "~s ~s (Not Found)" request-method request-path)
-		   (funcall not-found-handler))))
+	         (process-not-found (args)
+	           (let ((not-found-handler (first args)))
+	             
+	             #'(lambda (request-method request-path)
+		               (log-info "~s ~s (Not Found)" request-method request-path)
+		               (funcall not-found-handler))))
 
-	   (process-static-files (args)
-	     (let ((base-dir (first args)))
-	       
-	       #'(lambda (request-method request-path)
-		   (if (eq request-method :get)
-		       (respond-send-file base-dir request-path)))))
-	     
+	         (process-static-files (args)
+	           (let ((base-dir (first args)))
+	             
+	             #'(lambda (request-method request-path)
+		               (if (eq request-method :get)
+		                   (respond-send-file base-dir request-path)))))
+	         
 
-	   (walk-route-spec-for-level (route-spec)
-	     (let ((routing-functions
-		    (mapcar #'(lambda (route-definition)
-				(let ((type (first route-definition)))
-				  (cond ((find type '(:get :post :put :delete :head :patch :any))
-					 (process-basic-request type (cdr route-definition)))
-					
-					((eq type :wrap) (process-wrap (cdr route-definition)))
-					((eq type :not-found) (process-not-found (cdr route-definition)))
-					((eq type :static-files) (process-static-files (cdr route-definition)))
-					
-					(t (error "Unknown route verb ~s" type)))))
-			    route-spec)))
-	       
-	       #'(lambda (request-method request-path)
-		   (loop for try-route-entry in routing-functions
-			 for result = (funcall try-route-entry request-method request-path)
-			 if result return result)))))
-	       
-	   (walk-route-spec-for-level top-level-route-spec)))
+	         (walk-route-spec-for-level (route-spec)
+	           (let ((routing-functions
+		                (mapcar #'(lambda (route-definition)
+				                        (let ((type (first route-definition)))
+				                          (cond ((find type '(:get :post :put :delete :head :patch :any))
+					                               (process-basic-request type (cdr route-definition)))
+					                              
+					                              ((eq type :wrap) (process-wrap (cdr route-definition)))
+					                              ((eq type :not-found) (process-not-found (cdr route-definition)))
+					                              ((eq type :static-files) (process-static-files (cdr route-definition)))
+					                              
+					                              (t (error "Unknown route verb ~s" type)))))
+			                      route-spec)))
+	             
+	             #'(lambda (request-method request-path)
+		               (loop for try-route-entry in routing-functions
+			                   for result = (funcall try-route-entry request-method request-path)
+			                   if result return result)))))
+	  
+	  (walk-route-spec-for-level top-level-route-spec)))
 
 (defparameter *main-routing-method*
   #'(lambda (method path)

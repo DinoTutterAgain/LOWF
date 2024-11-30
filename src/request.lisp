@@ -13,6 +13,7 @@
 	   :request-set-captures
 	   :request-headers
 	   :request-all-cookies
+     :request-path-params
 	   :www-form-params))
 
 (in-package :lowf.request)
@@ -41,6 +42,10 @@
     (mapcar #'(lambda (nibble)
                 (quri:url-decode-params nibble))
             (ppcre:split "; " cookie))))
+
+(defun request-path-params ()
+  (x:if-let (param-string (getf *request* :query-string))
+    (quri:url-decode-params param-string)))
 
 ;; used when routing
 (defun request-set-captures (path-segment-names path-capture-values)

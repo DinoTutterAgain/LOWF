@@ -25,6 +25,7 @@
   (:import-from :lowf.request
 		:path-capture-value-integer
 		:www-form-params
+    :request-path-params
 		:request-all-cookies)
 
   (:import-from :lowf.response
@@ -149,6 +150,7 @@
 
 (defun act-on-root ()
   (log-info "cookie=~s" (request-all-cookies))
+  (log-info "path-params=~s" (request-path-params))
   (respond-html-view  (render-root)))
 
 (defun act-on-about ()
