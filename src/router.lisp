@@ -1,23 +1,22 @@
 (defpackage :lowf.router
   (:use :cl)
-  (:import-from :alexandria
-  		:make-keyword)
+  (:local-nicknames (:x :alexandria))
   
   (:import-from :lowf.logger
-		:log-info)
+		            :log-info)
 
   (:import-from :lowf.request
-		:request-set-captures)
+		            :request-set-captures)
 
   (:import-from :lowf.response
-		:respond-send-file
-		:respond-plaintext))
+		            :respond-send-file
+		            :respond-plaintext))
 
 (in-package :lowf.router)
 
 ;; internal
 (defun starts-with-colon? (input-string)
-  "Does input-string start with a :?"<
+  "Does input-string start with a :?"
   (and (> (length input-string) 1)
        (eq (char input-string 0) #\:)))
 
@@ -32,20 +31,20 @@
   "take a string like '/users/:id' and return a regex like '^\/users\/[^\/]+\/?$'"
 
   (labels ((join-path (segments)
-	     (format nil "^~{~A~^\\/~}\\/?$" segments)))
+	           (format nil "^~{~A~^\\/~}\\/?$" segments)))
 
     (loop
-       for segment in path-segments
+          for segment in path-segments
 
-       if (starts-with-colon? segment)
-         collect "([^\\/]*)" into output-segments
-         and collect (segment-to-name segment) into output-names
+          if (starts-with-colon? segment)
+          collect "([^\\/]*)" into output-segments
+          and collect (segment-to-name segment) into output-names
 
-       else
-         collect segment into output-segments
+          else
+          collect segment into output-segments
 
-       finally (return (values (join-path output-segments)
-			       output-names)))))
+          finally (return (values (join-path output-segments)
+			                            output-names)))))
 
 
 
@@ -66,22 +65,35 @@
 
 (export 'route-path-to)
 (defun route-path-to (name &rest args)
-  (let ((entry (gethash name *de-route-table*)))
-    (if entry
-	(let ((arg-count (length args))
-	      (route-arg-count (route-path-arg-count entry)))
-	  (if (eq arg-count
-		  route-arg-count)
+  (x:if-let (entry (gethash name *de-route-table*))
+	  (let ((route-arg-count (route-path-arg-count entry)))
+      
+      (if (zerop route-arg-count)
+          (route-path-original-string entry)
+          
+          (let ((arg-count (length args)))
+	          (if (eq arg-count
+		                route-arg-count)
 
-	      (apply #'format (append (list nil
-					    (route-path-format-string entry))
-				      args))
+	              (apply #'format (append (list nil
+					                                    (route-path-format-string entry))
+				                                args))
 
-	      ;; incorrect number of arguments
-	      (error "Incorrect number of arguments for route (wanted ~d, got ~d)"
-		     route-arg-count arg-count)))
+	              ;; incorrect number of arguments
+	              (error "Incorrect number of arguments for route (wanted ~d, got ~d)"
+		                   route-arg-count arg-count)))))
 
-	(error "A route of name '~a' could not be found" name))))
+	  (error "A route of name '~a' could not be found" name)))
+
+(export 'append-params) ;; a bit cheap-n-dirty but it'll work
+(defun append-params (route-string &rest params)
+  (let ((param-string (quri:url-encode-params (mapcar #'(lambda (prop)
+                                                          (cons (string-downcase (car prop))
+                                                                (cdr prop)))
+                                                      (x:plist-alist params)))))
+    (if (> (length param-string) 0)
+           (format nil "~a?~a" route-string param-string)
+           route-string)))
 
 (defun build-de-route-format-string (path-segments)
 
