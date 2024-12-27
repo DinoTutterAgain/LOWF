@@ -113,6 +113,7 @@
       (walk-route-spec route-spec))
     route-table))
 
+
 (export 'route-path-to)
 (defun route-path-to (name &rest args)
   (x:if-let (route (gethash name *de-routing-table*))
@@ -130,7 +131,7 @@
                            (progn
                              (multiple-value-bind (value found) (find-alist-value chunk all-args)
                                (when found
-                                 (princ (quri:url-encode-params value) output)
+                                 (princ (quri:url-encode (princ value)) output)
                                  (setf all-args (remove-if #'(lambda (cell-key) (eq cell-key chunk))
                                                            all-args
                                                            :key #'car))))))))
