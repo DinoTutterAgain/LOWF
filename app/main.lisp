@@ -92,7 +92,7 @@
 	  (mapcar #'(lambda (item)
 
 		      (html:div (:class "item")
-			(html:h3 () (html:a (:href (route-path-to :show-item (app.model:todo-item-id item))) (app.model:todo-item-name item)))
+			(html:h3 () (html:a (:href (route-path-to :show-item :id (app.model:todo-item-id item))) (app.model:todo-item-name item)))
 			(html:p () (format nil "Posted ~s" (app.model:todo-item-created-at item)))))
 		  open-items))))))
 
