@@ -26,7 +26,8 @@
 		:path-capture-value-integer
 		:www-form-params
     :request-path-params
-		:request-all-cookies)
+		:request-all-cookies
+    :request-local-arg)
 
   (:import-from :lowf.response
 		:respond-html-view
@@ -100,16 +101,19 @@
 ;; TODO: the list of open TODOs
 
 (defun render-about ()
-  (list
-   (html:h1 () "About Mini TODO")
-   (html:p () "Just a small demo project walking you through how the functionality of LOWF would look in a more full-fledged application")
-   (html:p () "Some things it shows:")
-   (html:ul ()
-     (html:li () "one")
-     (html:li () "two")
-     (html:li () "three")
-     (html:li () "four")
-     (html:li () "five"))))
+  (let ((value (request-local-arg :local-value)))
+    
+    (list
+     (html:h1 () "About Mini TODO")
+     (html:p () "Just a small demo project walking you through how the functionality of LOWF would look in a more full-fledged application")
+     (html:p () (format nil "local-value=~s" value))
+     (html:p () "Some things it shows:")
+     (html:ul ()
+       (html:li () "one")
+       (html:li () "two")
+       (html:li () "three")
+       (html:li () "four")
+       (html:li () "five")))))
 
 (defun render-show-item (item)
   (list
@@ -154,6 +158,8 @@
   (respond-html-view  (render-root)))
 
 (defun act-on-about ()
+  (setf (request-local-arg :local-value) 123)
+  
   (respond-html-view (render-about)))
 
 (defun act-on-show-item ()

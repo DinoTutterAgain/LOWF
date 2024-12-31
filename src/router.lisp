@@ -131,7 +131,7 @@
                            (progn
                              (multiple-value-bind (value found) (find-alist-value chunk all-args)
                                (when found
-                                 (princ (quri:url-encode (princ value)) output)
+                                 (princ (quri:url-encode (princ-to-string value)) output)
                                  (setf all-args (remove-if #'(lambda (cell-key) (eq cell-key chunk))
                                                            all-args
                                                            :key #'car))))))))

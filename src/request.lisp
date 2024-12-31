@@ -2,19 +2,21 @@
   (:use :cl)
   (:local-nicknames (:x :alexandria))
   (:import-from :lowf.utils
-		:cassoc)
+		            :cassoc)
 
   (:export :with-post-parameters
-	   :path-capture-value
-	   :path-capture-value-integer
-	   :with-request
-	   :request-method
-	   :request-path
-	   :request-set-captures
-	   :request-headers
-	   :request-all-cookies
-     :request-path-params
-	   :www-form-params))
+	         :path-capture-value
+	         :path-capture-value-integer
+	         :with-request
+	         :request-method
+	         :request-path
+	         :request-set-captures
+	         :request-headers
+	         :request-all-cookies
+           :request-path-params
+	         :www-form-params
+           :request-local-args
+           :request-local-arg))
 
 (in-package :lowf.request)
 
@@ -34,9 +36,29 @@
   (getf *request* :path-info))
 
 ;; exported
+(defun request-local-args ()
+  (getf *request* :locals))
+
+;; exported
+(defun request-local-arg (name)
+  (x:when-let (locals (getf *request* :locals))
+    (gethash name locals)))
+
+;; exported
+(defun (setf request-local-arg) (value name)
+  (labels ((request-locals ()
+             (setf (getf *request* :locals)
+                   (or (getf *request* :locals)
+                       (make-hash-table)))))
+    (setf (gethash name (request-locals))
+          value)))
+
+;; TODO: a macro like (with-request-local-args (name name name) ...
+
+;; exported
 (defun request-headers ()
   (getf *request* :headers))
-  
+
 (defun request-all-cookies ()
   (x:if-let (cookie (gethash "cookie" (request-headers)))
     (mapcar #'(lambda (nibble)
