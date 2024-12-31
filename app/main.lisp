@@ -1,39 +1,39 @@
 (defpackage :app.main
   (:use :cl)
   (:local-nicknames (:html :lowf.html-view.tags)
-		    (:model :app.model)
-		    (:x :alexandria))
+		                (:model :app.model)
+		                (:x :alexandria))
 
   (:import-from :lowf.router
-		:define-route-table
-		:route-path-to
-		:pass-request-on
-		:define-wrapper)
+		            :define-route-table
+		            :route-path-to
+		            :pass-request-on
+		            :define-wrapper)
 
   (:import-from :lowf.server
-		:define-server-pre-start)
+		            :define-server-pre-start)
 
   (:import-from :lowf.utils
-		:cassoc)
+		            :cassoc)
 
   (:import-from :lowf.logger
-		:log-info)
+		            :log-info)
 
   (:import-from :lowf.html-views
-		:define-layout)
+		            :define-layout)
 
   (:import-from :lowf.request
-		:path-capture-value-integer
-		:www-form-params
-    :request-path-params
-		:request-all-cookies
-    :request-local-arg)
+		            :path-capture-value-integer
+		            :www-form-params
+                :request-path-params
+		            :request-all-cookies
+                :request-local-arg)
 
   (:import-from :lowf.response
-		:respond-html-view
-		:respond-redirect
-		:cookie
-		:respond-plaintext))
+		            :respond-html-view
+		            :respond-redirect
+		            :cookie
+		            :respond-plaintext))
 
 (in-package :app.main)
 
@@ -65,37 +65,37 @@
 
      (html:body ()
        (html:header ()
-	 (html:a (:href "/" :id "logo") (html:span () "Mini TODO&#9745;"))
-	 (html:nav ()
-	   (html:a (:href (route-path-to :root)) (html:span () "Home"))
-	   (html:a (:href (route-path-to :new-item)) (html:span () "Add new"))
-	   (html:a (:href (route-path-to :about)) (html:span () "About"))))
+	       (html:a (:href "/" :id "logo") (html:span () "Mini TODO&#9745;"))
+	       (html:nav ()
+	         (html:a (:href (route-path-to :root)) (html:span () "Home"))
+	         (html:a (:href (route-path-to :new-item)) (html:span () "Add new"))
+	         (html:a (:href (route-path-to :about)) (html:span () "About"))))
 
        (html:main ()
-	 (html:div (:id "outer")
-	   contents))
+	       (html:div (:id "outer")
+	         contents))
 
        (html:footer ()
-	 (html:p () "Copyright &copy; 2024, Me Corp"))))))
+	       (html:p () "Copyright &copy; 2024, Me Corp"))))))
 
 (defun render-root ()
   (let ((open-items (app.model:open-items))
-	(open-item-count (app.model:pending-item-count)))
+	      (open-item-count (app.model:pending-item-count)))
 
     (list
      (html:h1 () "Mini TODO")
      (html:p () (html:a (:href (route-path-to :new-item)) "New item"))
 
      (if (zerop open-item-count)
-	 (html:p () "CONGRATULATIONS! no open items exist!")
-	 (list
-	  (html:p () (format nil "Found ~d open items (~d total)" open-item-count (app.model:all-item-count)))
-	  (mapcar #'(lambda (item)
+	       (html:p () "CONGRATULATIONS! no open items exist!")
+	       (list
+	        (html:p () (format nil "Found ~d open items (~d total)" open-item-count (app.model:all-item-count)))
+	        (mapcar #'(lambda (item)
 
-		      (html:div (:class "item")
-			(html:h3 () (html:a (:href (route-path-to :show-item :id (app.model:todo-item-id item))) (app.model:todo-item-name item)))
-			(html:p () (format nil "Posted ~s" (app.model:todo-item-created-at item)))))
-		  open-items))))))
+		                  (html:div (:class "item")
+			                  (html:h3 () (html:a (:href (route-path-to :show-item :id (app.model:todo-item-id item))) (app.model:todo-item-name item)))
+			                  (html:p () (format nil "Posted ~s" (app.model:todo-item-created-at item)))))
+		              open-items))))))
 
 
 ;; TODO: the list of open TODOs
@@ -120,7 +120,7 @@
    (html:h1 () (model:todo-item-name item))
    (html:p () (format nil "(~d) Created ~s" (model:todo-item-id item) (model:todo-item-created-at item)))
    (when (> (length (or (model:todo-item-description item) ""))
-	    0)
+	          0)
      (html:h2 () "Description")
      (html:div () (model:todo-item-description item)))))
 
@@ -143,7 +143,7 @@
   (list
    (html:h1 () "404 Not Found")
    (html:p () (or message
-		  "The thing you were looking for could not be found"))))
+		              "The thing you were looking for could not be found"))))
 
 ;;
 ;; controllers
@@ -177,8 +177,8 @@
 
 (defun act-do-create-item ()
   (let* ((parms (www-form-params))
-	 (item-name-value (cassoc "item-name" parms t))
-	 (item-description-value (cassoc "item-description" parms t)))
+	       (item-name-value (cassoc "item-name" parms t))
+	       (item-description-value (cassoc "item-description" parms t)))
 
     ;;(respond-plaintext (format nil "post-params=~s" parms))))
 
@@ -207,18 +207,18 @@
     output))
 
 (define-route-table
-  `((:get  "/" act-on-root :root)
-    (:get  "/about" act-on-about :about)
-    (:get  "/cookie/poke" act-on-poke-cookie)
-    (:wrap (:demo-wrapper)
-      (:get  "/todo/new" act-on-new-item :new-item)
-      (:post "/todo/new" act-do-create-item  :create-item)
-      (:get  "/todo/:id" act-on-show-item :show-item))
+    `((:get  "/" act-on-root :root)
+      (:get  "/about" act-on-about :about)
+      (:get  "/cookie/poke" act-on-poke-cookie)
+      (:wrap (:demo-wrapper)
+             (:get  "/todo/new" act-on-new-item :new-item)
+             (:post "/todo/new" act-do-create-item  :create-item)
+             (:get  "/todo/:id" act-on-show-item :show-item))
 
-    (:static-files ,(merge-pathnames "app/public/"
-  				     (osicat:current-directory)))
-    ;; must be last
-    (:not-found act-on-not-found)))
+      (:static-files ,(merge-pathnames "app/public/"
+  				                             (osicat:current-directory)))
+      ;; must be last
+      (:not-found act-on-not-found)))
 
 (define-server-pre-start
   )
