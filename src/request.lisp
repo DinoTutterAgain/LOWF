@@ -14,6 +14,8 @@
 	         :request-headers
 	         :request-all-cookies
            :request-path-params
+           :request-path-arg
+           :request-path-arg-number
 	         :www-form-params
            :request-local-args
            :request-local-arg))
@@ -69,6 +71,16 @@
   (x:if-let (param-string (getf *request* :query-string))
     (quri:url-decode-params param-string)))
 
+(defun request-path-arg (name &optional default)
+  (or (cassoc name
+              (request-path-params)
+              t)
+      default))
+
+(defun request-path-arg-number (name &optional default)
+  (or (parse-integer (request-path-arg name "") :junk-allowed t)
+      default))
+  
 ;; used when routing
 (defun request-set-captures (path-segment-names path-capture-values)
   (let ((path-captures
